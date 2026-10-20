@@ -13,7 +13,7 @@ data_router = APIRouter(
 
 
 @data_router.post(
-    "/upload",
+    "/upload/{project_id}",
     response_model=ApiResponse[UploadFileDTO],
     status_code=status.HTTP_201_CREATED,
     responses={
@@ -23,7 +23,7 @@ data_router = APIRouter(
         status.HTTP_500_INTERNAL_SERVER_ERROR: {"model": ApiResponse[None]},
     },
 )
-async def upload_document(file: UploadFile = File(...)) -> JSONResponse:
+async def upload_document(project_id : str,file: UploadFile = File(...)) -> JSONResponse:
 
     # 1. Validate the uploaded file
     validation_result = await validate_uploaded_file(file)
@@ -32,7 +32,7 @@ async def upload_document(file: UploadFile = File(...)) -> JSONResponse:
         return to_http_response(validation_result)
 
     # 2. Save the file
-    result = await upload_file(file)
+    result = await upload_file(project_id,file)
 
     # 3. Return successful or failed response
     return to_http_response(

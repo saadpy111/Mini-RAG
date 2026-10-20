@@ -9,23 +9,24 @@ from src.helpers.result_pattern import ErrorType, Result, ResultError
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 
-UPLOAD_DIR = ROOT_DIR / "assets" / "files"
 CHUNK_SIZE = settings.file_default_chunk_size
 
 
 async def upload_file(
+    project_id :str,
     file: UploadFile,
 ) -> Result[UploadFileDTO]:
 
     file_path = None
+    UPLOAD_DIR = ROOT_DIR / "assets" / "files" / project_id
 
     try:
         UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
         original_filename = file.filename or ""
         extension = Path(original_filename).suffix.lower()
-
-        stored_filename = f"{uuid4().hex}{extension}"
+        file_id = uuid4().hex 
+        stored_filename = f"{file_id}{extension}"
         file_path = UPLOAD_DIR / stored_filename
 
         with file_path.open("wb") as destination:
@@ -35,6 +36,7 @@ async def upload_file(
         dto = UploadFileDTO(
             original_filename=original_filename,
             stored_filename=stored_filename,
+            file_id = file_id,
             file_path=str(file_path),
         )
 
