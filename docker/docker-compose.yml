@@ -1,0 +1,32 @@
+
+services:
+  mongodb:
+    container_name: mongodb
+    image: mongo:7
+    ports:
+      - "27007:27017"
+    volumes:
+      - ./mongodb:/data/db
+    networks:
+      - mini-rag-network
+    restart: always
+
+  mongo-express:
+    container_name: mongo-express
+    image: mongo-express:latest
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_URL: ${DOCKER_MONGODB_URL}
+      ME_CONFIG_BASICAUTH_ENABLED: "true"
+      ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_EXPRESS_USERNAME}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_EXPRESS_PASSWORD}
+    depends_on:
+      - mongodb
+    networks:
+      - mini-rag-network
+    restart: unless-stopped
+
+networks:
+  mini-rag-network:
+    driver: bridge

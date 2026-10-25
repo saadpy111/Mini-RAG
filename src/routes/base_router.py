@@ -6,13 +6,13 @@ from src.dtos import ApiResponse
 from src.helpers import config
 from src.helpers.result_pattern import Result
 
-router = APIRouter(
+base_router = APIRouter(
     prefix="/api/v1",
     tags=["api_v1"],
 )
 
 
-@router.get(
+@base_router.get(
     "/",
     response_model=ApiResponse[dict[str, str]],
 )
