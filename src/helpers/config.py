@@ -9,7 +9,8 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 class Settings(BaseSettings):
     app_name: str = "Mini-RAG"
     app_version: str = "0.1.0"
-
+    mongodb_uri: str
+    mongodb_database: str = "mini_rag"
     openai_api_key: SecretStr = SecretStr("")
 
     file_allowed_types: list[str] = Field(
