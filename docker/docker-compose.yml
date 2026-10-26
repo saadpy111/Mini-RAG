@@ -1,10 +1,14 @@
 
+
 services:
   mongodb:
     container_name: mongodb
     image: mongo:7
     ports:
       - "27007:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
     volumes:
       - ./mongodb:/data/db
     networks:
@@ -30,3 +34,5 @@ services:
 networks:
   mini-rag-network:
     driver: bridge
+
+
