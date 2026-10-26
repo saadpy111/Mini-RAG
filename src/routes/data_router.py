@@ -1,11 +1,17 @@
 
+from pathlib import Path
+from typing import Annotated
+
 from bson import ObjectId
 from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 from fastapi.responses import JSONResponse
-from typing import Annotated
-from src.helpers.result_pattern import Result, ResultError, ErrorType
+
 from src.api import to_http_response
+from src.business_logic.asset_business_logic import AssetBusinessLogic
+from src.business_logic.chunk_business_logic import ChunkBusinessLogic
+from src.business_logic.project_business_logic import ProjectBusinessLogic
 from src.dependencies.dependency_injection import (
+    get_asset_business_logic,
     get_chunk_business_logic,
     get_project_business_logic,
 )
@@ -15,11 +21,10 @@ from src.dtos import (
     ProcessRequest,
     UploadFileDTO,
 )
-from src.helpers.result_pattern import Result
+from src.helpers.result_pattern import Result, ResultError, ErrorType
+from src.models.asset import Asset
 from src.models.data_chunk import DataChunk
 from src.models.project import Project
-from src.business_logic.chunk_business_logic import ChunkBusinessLogic
-from src.business_logic.project_business_logic import ProjectBusinessLogic
 from src.services.file_process_service import (
     get_file_content,
     process_file_content,
@@ -50,6 +55,10 @@ ChunkBL = Annotated[
     Depends(get_chunk_business_logic),
 ]
 
+AssetBL = Annotated[
+    AssetBusinessLogic,
+    Depends(get_asset_business_logic),
+]
 
 
 # Project endpoints
@@ -86,8 +95,8 @@ async def get_project(
     return to_http_response(result)
 
 
-
 # Upload endpoint
+
 
 
 @data_router.post(
@@ -97,34 +106,81 @@ async def get_project(
 )
 async def upload_document(
     project_id: str,
+    project_bl: ProjectBL,
+    asset_bl: AssetBL,
     file: UploadFile = File(...),
-    project_bl: ProjectBL = None,
 ) -> JSONResponse:
+    # 1. Get the project or create it if it does not exist.
     project_result = await project_bl.get_project(project_id)
 
-    if project_result.error.type != ErrorType.NOT_FOUND:
-            return to_http_response(project_result)
+    if project_result.is_success:
+        project = project_result.value
 
-    create_result = await project_bl.create_project(
+    elif project_result.error.type == ErrorType.NOT_FOUND:
+        create_result = await project_bl.create_project(
             Project(project_id=project_id)
         )
 
-    if not create_result.is_success:
+        if not create_result.is_success:
             return to_http_response(create_result)
+
+        project = create_result.value
+
+    else:
+        return to_http_response(project_result)
+
+    # 2. Validate the uploaded file.
     validation_result = await validate_uploaded_file(file)
 
     if not validation_result.is_success:
         return to_http_response(validation_result)
 
-    result = await upload_file(project_id, file)
+    # 3. Upload the physical file.
+    upload_result = await upload_file(project_id, file)
 
-    return to_http_response(
-        result,
-        success_status_code=status.HTTP_201_CREATED,
-        success_message="File uploaded successfully.",
+    if not upload_result.is_success:
+        return to_http_response(upload_result)
+
+    uploaded_file: UploadFileDTO = upload_result.value
+
+    # 4. Get the actual stored file size.
+    try:
+        asset_size = Path(uploaded_file.file_path).stat().st_size
+    except OSError:
+        return to_http_response(
+            Result.failure(
+                ResultError(
+                    code="uploaded_file_size_unavailable",
+                    message="The uploaded file size could not be determined.",
+                    type=ErrorType.INTERNAL,
+                )
+            )
+        )
+
+    # 5. Persist asset metadata.
+    asset = Asset(
+        asset_project_id=project.id,
+        asset_type=Path(uploaded_file.original_filename).suffix.lower(),
+        asset_name=uploaded_file.stored_filename,
+        asset_size=asset_size,
+        asset_config={
+            "file_id": uploaded_file.file_id,
+            "original_filename": uploaded_file.original_filename,
+            "file_path": uploaded_file.file_path,
+        },
     )
 
+    asset_result = await asset_bl.create_asset(asset)
 
+    if not asset_result.is_success:
+        return to_http_response(asset_result)
+
+    # 6. Return the existing upload DTO.
+    return to_http_response(
+        Result.success(uploaded_file),
+        success_status_code=status.HTTP_201_CREATED,
+        success_message="File uploaded and asset metadata saved successfully.",
+    )
 
 # Process and persist chunks
 
@@ -171,20 +227,22 @@ async def process_document(
     documents = chunks_result.value
 
     if not documents:
-     return to_http_response(
-        Result.failure(
-            ResultError(
-                code="no_chunks_generated",
-                message="No chunks were generated from the file.",
-                type=ErrorType.UNPROCESSABLE,
+        return to_http_response(
+            Result.failure(
+                ResultError(
+                    code="no_chunks_generated",
+                    message="No chunks were generated from the file.",
+                    type=ErrorType.UNPROCESSABLE,
+                )
             )
         )
-    )
+
     if process_request.do_reset:
-       delete_result = await chunk_bl.delete_by_project_id(project.id)
-       if not delete_result.is_success:
-          return to_http_response(delete_result)
-    
+        delete_result = await chunk_bl.delete_by_project_id(project.id)
+
+        if not delete_result.is_success:
+            return to_http_response(delete_result)
+
     data_chunks = [
         DataChunk(
             chunk_text=document.page_content,
@@ -214,7 +272,6 @@ async def process_document(
     )
 
 
-
 # Get one chunk
 
 
@@ -226,11 +283,7 @@ async def get_chunk_by_id(
     chunk_id: str,
     chunk_bl: ChunkBL,
 ) -> JSONResponse:
-    
     if not ObjectId.is_valid(chunk_id):
-        # Replace this with your project's standard validation error.
-        from src.helpers.result_pattern import ErrorType, ResultError
-
         return to_http_response(
             Result.failure(
                 ResultError(
@@ -244,7 +297,6 @@ async def get_chunk_by_id(
     result = await chunk_bl.get_chunk_by_id(ObjectId(chunk_id))
 
     return to_http_response(result)
-
 
 
 # Get chunks for a project
@@ -261,8 +313,6 @@ async def get_chunks_by_project_id(
     page_num: int = Query(default=1, gt=0),
 ) -> JSONResponse:
     if not ObjectId.is_valid(project_id):
-        from src.helpers.result_pattern import ErrorType, ResultError
-
         return to_http_response(
             Result.failure(
                 ResultError(
@@ -282,7 +332,6 @@ async def get_chunks_by_project_id(
     return to_http_response(result)
 
 
-
 # Delete all chunks for a project
 
 
@@ -295,8 +344,6 @@ async def delete_chunks_by_project_id(
     chunk_bl: ChunkBL,
 ) -> JSONResponse:
     if not ObjectId.is_valid(project_id):
-        from src.helpers.result_pattern import ErrorType, ResultError
-
         return to_http_response(
             Result.failure(
                 ResultError(
