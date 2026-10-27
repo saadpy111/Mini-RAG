@@ -1,5 +1,7 @@
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from src.constants import ErrorMessage
+
 
 class ProcessRequest(BaseModel):
     file_id: str = Field(
@@ -18,5 +20,5 @@ class ProcessRequest(BaseModel):
     @model_validator(mode="after")
     def validate_overlap_size(self) -> "ProcessRequest":
         if self.overlap_size >= self.chunk_size:
-            raise ValueError("overlap_size must be smaller than chunk_size.")
+            raise ValueError(ErrorMessage.INVALID_CHUNK_CONFIGURATION)
         return self

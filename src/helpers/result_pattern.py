@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Generic, TypeVar
 
+from src.constants import ErrorCode, ErrorMessage
+
 T = TypeVar("T")
 
 
@@ -34,13 +36,13 @@ class Result(Generic[T]):
     def __post_init__(self) -> None:
         if self.is_success:
             if self.error is not None:
-                raise ValueError("A successful result cannot contain an error.")
+                raise ValueError(ErrorMessage.SUCCESS_CANNOT_CONTAIN_ERROR)
             return
 
         if self.error is None:
-            raise ValueError("A failed result must contain an error.")
+            raise ValueError(ErrorMessage.FAILURE_REQUIRES_ERROR)
         if self.value is not None:
-            raise ValueError("A failed result cannot contain a value.")
+            raise ValueError(ErrorMessage.FAILURE_CANNOT_CONTAIN_VALUE)
 
     @classmethod
     def success(cls, value: T) -> "Result[T]":
@@ -54,7 +56,7 @@ class Result(Generic[T]):
     ) -> "Result[T]":
         if isinstance(error, str):
             error = ResultError(
-                code="error",
+                code=ErrorCode.FALLBACK,
                 message=error,
                 type=error_type,
             )

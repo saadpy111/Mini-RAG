@@ -2,6 +2,7 @@ from pathlib import Path
 
 from fastapi import UploadFile
 
+from src.constants import ErrorCode, ErrorMessage, MessageTemplate
 from src.helpers.config import settings
 from src.helpers.result_pattern import ErrorType, Result, ResultError
 
@@ -14,8 +15,8 @@ async def validate_uploaded_file(
     if not file.filename:
         return Result.failure(
             ResultError(
-                code="missing_filename",
-                message="Filename is required.",
+                code=ErrorCode.MISSING_FILENAME,
+                message=ErrorMessage.MISSING_FILENAME,
                 type=ErrorType.VALIDATION,
             )
         )
@@ -26,10 +27,9 @@ async def validate_uploaded_file(
     if extension not in settings.file_allowed_types:
         return Result.failure(
             ResultError(
-                code="unsupported_file_type",
-                message=(
-                    "File type not allowed. Allowed types: "
-                    f"{', '.join(settings.file_allowed_types)}"
+                code=ErrorCode.UNSUPPORTED_FILE_TYPE,
+                message=MessageTemplate.ALLOWED_FILE_TYPES.format(
+                    allowed_types=", ".join(settings.file_allowed_types),
                 ),
                 type=ErrorType.VALIDATION,
             )
@@ -44,10 +44,9 @@ async def validate_uploaded_file(
         await file.seek(0)
         return Result.failure(
             ResultError(
-                code="file_too_large",
-                message=(
-                    f"File size exceeds the limit of "
-                    f"{settings.file_max_size} MB."
+                code=ErrorCode.FILE_TOO_LARGE,
+                message=MessageTemplate.FILE_TOO_LARGE.format(
+                    max_size=settings.file_max_size,
                 ),
                 type=ErrorType.PAYLOAD_TOO_LARGE,
             )

@@ -6,6 +6,7 @@ from pymongo.errors import PyMongoError
 from src.models.data_chunk import DataChunk
 from src.repositories.data_chunk_repository import DataChunkRepository
 from src.repositories.project_repository import ProjectRepository
+from src.constants import ErrorCode, ErrorMessage, MessageTemplate
 from src.helpers.result_pattern import Result, ResultError, ErrorType
 
 
@@ -46,8 +47,8 @@ class ChunkBusinessLogic:
         if project is None:
             return Result.failure(
                 ResultError(
-                    code="project_not_found",
-                    message="Project not found.",
+                    code=ErrorCode.PROJECT_NOT_FOUND,
+                    message=ErrorMessage.PROJECT_NOT_FOUND,
                     type=ErrorType.NOT_FOUND,
                 )
             )
@@ -64,8 +65,8 @@ class ChunkBusinessLogic:
         if not chunks:
             return Result.failure(
                 ResultError(
-                    code="empty_chunks",
-                    message="Chunks list cannot be empty.",
+                    code=ErrorCode.EMPTY_CHUNKS,
+                    message=ErrorMessage.EMPTY_CHUNKS,
                     type=ErrorType.VALIDATION,
                 )
             )
@@ -73,8 +74,8 @@ class ChunkBusinessLogic:
         if batch_size <= 0:
             return Result.failure(
                 ResultError(
-                    code="invalid_batch_size",
-                    message="Batch size must be greater than zero.",
+                    code=ErrorCode.INVALID_BATCH_SIZE,
+                    message=ErrorMessage.INVALID_BATCH_SIZE,
                     type=ErrorType.VALIDATION,
                 )
             )
@@ -84,8 +85,8 @@ class ChunkBusinessLogic:
         if len(project_ids) != 1:
             return Result.failure(
                 ResultError(
-                    code="project_id_mismatch",
-                    message="All chunks must belong to the same project.",
+                    code=ErrorCode.PROJECT_ID_MISMATCH,
+                    message=ErrorMessage.PROJECT_ID_MISMATCH,
                     type=ErrorType.VALIDATION,
                 )
             )
@@ -97,8 +98,8 @@ class ChunkBusinessLogic:
         if len(asset_ids) != 1:
             return Result.failure(
                 ResultError(
-                    code="asset_id_mismatch",
-                    message="All chunks must belong to the same asset.",
+                    code=ErrorCode.ASSET_ID_MISMATCH,
+                    message=ErrorMessage.ASSET_ID_MISMATCH,
                     type=ErrorType.VALIDATION,
                 )
             )
@@ -108,8 +109,8 @@ class ChunkBusinessLogic:
         if project is None:
             return Result.failure(
                 ResultError(
-                    code="project_not_found",
-                    message="Project not found.",
+                    code=ErrorCode.PROJECT_NOT_FOUND,
+                    message=ErrorMessage.PROJECT_NOT_FOUND,
                     type=ErrorType.NOT_FOUND,
                 )
             )
@@ -122,8 +123,8 @@ class ChunkBusinessLogic:
         except PyMongoError:
             return Result.failure(
                 ResultError(
-                    code="chunk_persistence_failed",
-                    message="Chunks could not be persisted.",
+                    code=ErrorCode.CHUNK_PERSISTENCE_FAILED,
+                    message=ErrorMessage.CHUNK_PERSISTENCE_FAILED,
                     type=ErrorType.INTERNAL,
                 )
             )
@@ -139,8 +140,8 @@ class ChunkBusinessLogic:
         if not chunks:
             return Result.failure(
                 ResultError(
-                    code="empty_chunks",
-                    message="Chunks list cannot be empty.",
+                    code=ErrorCode.EMPTY_CHUNKS,
+                    message=ErrorMessage.EMPTY_CHUNKS,
                     type=ErrorType.VALIDATION,
                 )
             )
@@ -152,11 +153,8 @@ class ChunkBusinessLogic:
         ):
             return Result.failure(
                 ResultError(
-                    code="chunk_scope_mismatch",
-                    message=(
-                        "All chunks must belong to the specified project "
-                        "and asset."
-                    ),
+                    code=ErrorCode.CHUNK_SCOPE_MISMATCH,
+                    message=ErrorMessage.CHUNK_SCOPE_MISMATCH,
                     type=ErrorType.VALIDATION,
                 )
             )
@@ -171,8 +169,8 @@ class ChunkBusinessLogic:
         except PyMongoError:
             return Result.failure(
                 ResultError(
-                    code="chunk_lookup_failed",
-                    message="Existing chunks could not be retrieved.",
+                    code=ErrorCode.CHUNK_LOOKUP_FAILED,
+                    message=ErrorMessage.CHUNK_LOOKUP_FAILED,
                     type=ErrorType.INTERNAL,
                 )
             )
@@ -194,11 +192,9 @@ class ChunkBusinessLogic:
         except PyMongoError:
             return Result.failure(
                 ResultError(
-                    code="chunk_cleanup_failed",
-                    message=(
-                        f"{inserted_count} replacement chunks were stored, "
-                        "but the previous chunks could not be removed; "
-                        "old chunks may remain."
+                    code=ErrorCode.CHUNK_CLEANUP_FAILED,
+                    message=MessageTemplate.CHUNK_CLEANUP_FAILED.format(
+                        inserted_count=inserted_count,
                     ),
                     type=ErrorType.INTERNAL,
                 )
@@ -207,12 +203,11 @@ class ChunkBusinessLogic:
         if deleted_count != len(previous_chunk_ids):
             return Result.failure(
                 ResultError(
-                    code="chunk_cleanup_failed",
-                    message=(
-                        f"{inserted_count} replacement chunks were stored, "
-                        f"but only {deleted_count} of "
-                        f"{len(previous_chunk_ids)} previous chunks were "
-                        "removed; old chunks may remain."
+                    code=ErrorCode.CHUNK_CLEANUP_FAILED,
+                    message=MessageTemplate.CHUNK_CLEANUP_PARTIAL.format(
+                        inserted_count=inserted_count,
+                        deleted_count=deleted_count,
+                        expected_count=len(previous_chunk_ids),
                     ),
                     type=ErrorType.INTERNAL,
                 )
@@ -229,8 +224,8 @@ class ChunkBusinessLogic:
         if chunk is None:
             return Result.failure(
                 ResultError(
-                    code="chunk_not_found",
-                    message="Chunk not found.",
+                    code=ErrorCode.CHUNK_NOT_FOUND,
+                    message=ErrorMessage.CHUNK_NOT_FOUND,
                     type=ErrorType.NOT_FOUND,
                 )
             )
@@ -246,8 +241,8 @@ class ChunkBusinessLogic:
         if page_size <= 0 or page_num <= 0:
             return Result.failure(
                 ResultError(
-                    code="invalid_pagination",
-                    message="Page size and page number must be greater than zero.",
+                    code=ErrorCode.INVALID_PAGINATION,
+                    message=ErrorMessage.INVALID_PAGINATION,
                     type=ErrorType.VALIDATION,
                 )
             )
@@ -257,8 +252,8 @@ class ChunkBusinessLogic:
         if project is None:
             return Result.failure(
                 ResultError(
-                    code="project_not_found",
-                    message="Project not found.",
+                    code=ErrorCode.PROJECT_NOT_FOUND,
+                    message=ErrorMessage.PROJECT_NOT_FOUND,
                     type=ErrorType.NOT_FOUND,
                 )
             )
@@ -280,8 +275,8 @@ class ChunkBusinessLogic:
         if project is None:
             return Result.failure(
                 ResultError(
-                    code="project_not_found",
-                    message="Project not found.",
+                    code=ErrorCode.PROJECT_NOT_FOUND,
+                    message=ErrorMessage.PROJECT_NOT_FOUND,
                     type=ErrorType.NOT_FOUND,
                 )
             )

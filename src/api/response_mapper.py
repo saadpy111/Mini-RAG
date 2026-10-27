@@ -3,6 +3,7 @@ from typing import TypeVar
 from fastapi import status
 from fastapi.responses import JSONResponse
 
+from src.constants import ErrorMessage, SuccessMessage
 from src.dtos import ApiResponse
 from src.helpers.result_pattern import ErrorType, Result
 
@@ -19,7 +20,7 @@ ERROR_STATUS_CODES: dict[ErrorType, int] = {
 }
 
 DEFAULT_SUCCESS_STATUS = status.HTTP_200_OK
-DEFAULT_SUCCESS_MESSAGE = "Operation completed successfully."
+DEFAULT_SUCCESS_MESSAGE = SuccessMessage.OPERATION_COMPLETED
 INTERNAL_ERROR_STATUS = status.HTTP_500_INTERNAL_SERVER_ERROR
 
 
@@ -42,7 +43,7 @@ def to_http_response(
 
     error = result.error
     if error is None:
-        raise ValueError("A failed result must contain an error.")
+        raise ValueError(ErrorMessage.FAILURE_REQUIRES_ERROR)
 
     body = ApiResponse[None](
         is_success=False,

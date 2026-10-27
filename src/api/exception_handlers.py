@@ -5,13 +5,14 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from src.constants import ErrorMessage
 from src.dtos import ApiResponse
 
 logger = logging.getLogger(__name__)
 
-VALIDATION_ERROR_MESSAGE = "Request validation failed."
-HTTP_ERROR_MESSAGE = "Request failed."
-INTERNAL_ERROR_MESSAGE = "An internal server error occurred."
+VALIDATION_ERROR_MESSAGE = ErrorMessage.REQUEST_VALIDATION_FAILED
+HTTP_ERROR_MESSAGE = ErrorMessage.REQUEST_FAILED
+INTERNAL_ERROR_MESSAGE = ErrorMessage.INTERNAL_SERVER_ERROR
 
 
 async def request_validation_exception_handler(

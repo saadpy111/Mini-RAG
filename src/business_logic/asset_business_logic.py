@@ -4,6 +4,7 @@ from bson import ObjectId
 from src.models.asset import Asset
 from src.repositories.asset_repository import AssetRepository
 from src.repositories.project_repository import ProjectRepository
+from src.constants import ErrorCode, ErrorMessage
 from src.helpers.result_pattern import Result, ResultError, ErrorType
 
 
@@ -27,8 +28,8 @@ class AssetBusinessLogic:
         if project is None:
             return Result.failure(
                 ResultError(
-                    code="project_not_found",
-                    message="Project not found.",
+                    code=ErrorCode.PROJECT_NOT_FOUND,
+                    message=ErrorMessage.PROJECT_NOT_FOUND,
                     type=ErrorType.NOT_FOUND,
                 )
             )
@@ -36,8 +37,8 @@ class AssetBusinessLogic:
         if not asset.asset_name.strip():
             return Result.failure(
                 ResultError(
-                    code="invalid_asset_name",
-                    message="Asset name cannot be empty.",
+                    code=ErrorCode.INVALID_ASSET_NAME,
+                    message=ErrorMessage.INVALID_ASSET_NAME,
                     type=ErrorType.VALIDATION,
                 )
             )
@@ -56,8 +57,8 @@ class AssetBusinessLogic:
         if project is None:
             return Result.failure(
                 ResultError(
-                    code="project_not_found",
-                    message="Project not found.",
+                    code=ErrorCode.PROJECT_NOT_FOUND,
+                    message=ErrorMessage.PROJECT_NOT_FOUND,
                     type=ErrorType.NOT_FOUND,
                 )
             )
@@ -70,8 +71,8 @@ class AssetBusinessLogic:
         if asset is None:
             return Result.failure(
                 ResultError(
-                    code="asset_not_found",
-                    message="Asset not found.",
+                    code=ErrorCode.ASSET_NOT_FOUND,
+                    message=ErrorMessage.ASSET_NOT_FOUND,
                     type=ErrorType.NOT_FOUND,
                 )
             )
@@ -88,8 +89,8 @@ class AssetBusinessLogic:
         if project is None:
             return Result.failure(
                 ResultError(
-                    code="project_not_found",
-                    message="Project not found.",
+                    code=ErrorCode.PROJECT_NOT_FOUND,
+                    message=ErrorMessage.PROJECT_NOT_FOUND,
                     type=ErrorType.NOT_FOUND,
                 )
             )
@@ -102,8 +103,8 @@ class AssetBusinessLogic:
         if asset is None:
             return Result.failure(
                 ResultError(
-                    code="asset_not_found",
-                    message="Asset not found for the specified file.",
+                    code=ErrorCode.ASSET_NOT_FOUND,
+                    message=ErrorMessage.ASSET_NOT_FOUND_FOR_FILE,
                     type=ErrorType.NOT_FOUND,
                 )
             )
@@ -119,8 +120,8 @@ class AssetBusinessLogic:
         if project is None:
             return Result.failure(
                 ResultError(
-                    code="project_not_found",
-                    message="Project not found.",
+                    code=ErrorCode.PROJECT_NOT_FOUND,
+                    message=ErrorMessage.PROJECT_NOT_FOUND,
                     type=ErrorType.NOT_FOUND,
                 )
             )
@@ -140,8 +141,8 @@ class AssetBusinessLogic:
         if page_size <= 0 or page_num <= 0:
             return Result.failure(
                 ResultError(
-                    code="invalid_pagination",
-                    message="Page size and page number must be greater than zero.",
+                    code=ErrorCode.INVALID_PAGINATION,
+                    message=ErrorMessage.INVALID_PAGINATION,
                     type=ErrorType.VALIDATION,
                 )
             )
@@ -149,8 +150,8 @@ class AssetBusinessLogic:
         if page_size > 100:
             return Result.failure(
                 ResultError(
-                    code="page_size_too_large",
-                    message="Page size cannot exceed 100.",
+                    code=ErrorCode.PAGE_SIZE_TOO_LARGE,
+                    message=ErrorMessage.PAGE_SIZE_TOO_LARGE,
                     type=ErrorType.VALIDATION,
                 )
             )
@@ -160,8 +161,8 @@ class AssetBusinessLogic:
         if project is None:
             return Result.failure(
                 ResultError(
-                    code="project_not_found",
-                    message="Project not found.",
+                    code=ErrorCode.PROJECT_NOT_FOUND,
+                    message=ErrorMessage.PROJECT_NOT_FOUND,
                     type=ErrorType.NOT_FOUND,
                 )
             )
@@ -185,8 +186,8 @@ class AssetBusinessLogic:
         if project is None:
             return Result.failure(
                 ResultError(
-                    code="project_not_found",
-                    message="Project not found.",
+                    code=ErrorCode.PROJECT_NOT_FOUND,
+                    message=ErrorMessage.PROJECT_NOT_FOUND,
                     type=ErrorType.NOT_FOUND,
                 )
             )
@@ -207,8 +208,8 @@ class AssetBusinessLogic:
         if project is None:
             return Result.failure(
                 ResultError(
-                    code="project_not_found",
-                    message="Project not found.",
+                    code=ErrorCode.PROJECT_NOT_FOUND,
+                    message=ErrorMessage.PROJECT_NOT_FOUND,
                     type=ErrorType.NOT_FOUND,
                 )
             )
@@ -221,8 +222,8 @@ class AssetBusinessLogic:
         if not deleted:
             return Result.failure(
                 ResultError(
-                    code="asset_not_found",
-                    message="Asset not found.",
+                    code=ErrorCode.ASSET_NOT_FOUND,
+                    message=ErrorMessage.ASSET_NOT_FOUND,
                     type=ErrorType.NOT_FOUND,
                 )
             )

@@ -3,6 +3,7 @@ from uuid import uuid4
 
 from fastapi import UploadFile
 
+from src.constants import ErrorCode, ErrorMessage
 from src.dtos import UploadFileDTO
 from src.helpers.config import settings
 from src.helpers.result_pattern import ErrorType, Result, ResultError
@@ -53,8 +54,8 @@ async def upload_file(
 
         return Result.failure(
             ResultError(
-                code="file_storage_error",
-                message="Failed to save the uploaded file.",
+                code=ErrorCode.FILE_STORAGE_ERROR,
+                message=ErrorMessage.FILE_STORAGE_ERROR,
                 type=ErrorType.INTERNAL,
             )
         )

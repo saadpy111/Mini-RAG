@@ -3,6 +3,7 @@ from bson import ObjectId
 from pymongo import InsertOne
 from pymongo.asynchronous.database import AsyncDatabase
 
+from src.constants import ErrorMessage
 from src.models.data_chunk import DataChunk
 
 
@@ -27,7 +28,7 @@ class DataChunkRepository:
         batch_size: int = 100,
     ) -> int:
         if batch_size <= 0:
-            raise ValueError("batch_size must be greater than zero")
+            raise ValueError(ErrorMessage.INVALID_BATCH_SIZE_GUARD)
 
         if not chunks:
             return 0
@@ -97,10 +98,10 @@ class DataChunkRepository:
         page_num: int,
     ) -> list[DataChunk]:
         if page_size <= 0:
-            raise ValueError("page_size must be greater than zero")
+            raise ValueError(ErrorMessage.INVALID_PAGE_SIZE_GUARD)
 
         if page_num <= 0:
-            raise ValueError("page_num must be greater than zero")
+            raise ValueError(ErrorMessage.INVALID_PAGE_NUM_GUARD)
 
         filter_query = {"chunk_project_id": project_id}
         skip_count = (page_num - 1) * page_size

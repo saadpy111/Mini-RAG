@@ -13,6 +13,12 @@ from src.business_logic.chunk_business_logic import (
     build_data_chunks,
 )
 from src.business_logic.project_business_logic import ProjectBusinessLogic
+from src.constants import (
+    ErrorCode,
+    ErrorMessage,
+    MessageTemplate,
+    SuccessMessage,
+)
 from src.dependencies.dependency_injection import (
     get_asset_business_logic,
     get_chunk_business_logic,
@@ -84,7 +90,7 @@ async def create_project(
     return to_http_response(
         result,
         success_status_code=status.HTTP_201_CREATED,
-        success_message="Project created successfully.",
+        success_message=SuccessMessage.PROJECT_CREATED,
     )
 
 
@@ -156,8 +162,8 @@ async def upload_document(
         return to_http_response(
             Result.failure(
                 ResultError(
-                    code="uploaded_file_size_unavailable",
-                    message="The uploaded file size could not be determined.",
+                    code=ErrorCode.UPLOADED_FILE_SIZE_UNAVAILABLE,
+                    message=ErrorMessage.UPLOADED_FILE_SIZE_UNAVAILABLE,
                     type=ErrorType.INTERNAL,
                 )
             )
@@ -185,7 +191,7 @@ async def upload_document(
     return to_http_response(
         Result.success(uploaded_file),
         success_status_code=status.HTTP_201_CREATED,
-        success_message="File uploaded and asset metadata saved successfully.",
+        success_message=SuccessMessage.FILE_UPLOADED,
     )
 
 # Process and persist chunks
@@ -228,8 +234,8 @@ async def process_document(
         return to_http_response(
             Result.failure(
                 ResultError(
-                    code="invalid_asset_id",
-                    message="Asset identifier is missing.",
+                    code=ErrorCode.INVALID_ASSET_ID,
+                    message=ErrorMessage.INVALID_ASSET_ID,
                     type=ErrorType.INTERNAL,
                 )
             )
@@ -258,8 +264,8 @@ async def process_document(
         return to_http_response(
             Result.failure(
                 ResultError(
-                    code="no_chunks_generated",
-                    message="No chunks were generated from the file.",
+                    code=ErrorCode.NO_CHUNKS_GENERATED,
+                    message=ErrorMessage.NO_CHUNKS_GENERATED,
                     type=ErrorType.UNPROCESSABLE,
                 )
             )
@@ -294,7 +300,7 @@ async def process_document(
 
     return to_http_response(
         Result.success(processing_result),
-        success_message="File processed and chunks saved successfully.",
+        success_message=SuccessMessage.FILE_PROCESSED,
     )
 
 
@@ -337,8 +343,8 @@ async def process_project_assets(
         return to_http_response(
             Result.failure(
                 ResultError(
-                    code="invalid_project_id",
-                    message="Project identifier is missing.",
+                    code=ErrorCode.INVALID_PROJECT_ID,
+                    message=ErrorMessage.PROJECT_ID_MISSING,
                     type=ErrorType.INTERNAL,
                 )
             )
@@ -355,8 +361,8 @@ async def process_project_assets(
         return to_http_response(
             Result.failure(
                 ResultError(
-                    code="no_assets_in_project",
-                    message="Project has no assets to process.",
+                    code=ErrorCode.NO_ASSETS_IN_PROJECT,
+                    message=ErrorMessage.NO_ASSETS_IN_PROJECT,
                     type=ErrorType.UNPROCESSABLE,
                 )
             )
@@ -374,10 +380,8 @@ async def process_project_assets(
 
         if not isinstance(file_id, str) or not file_id.strip():
             error = ResultError(
-                code="asset_metadata_missing",
-                message=(
-                    "Asset metadata does not contain a valid file identifier."
-                ),
+                code=ErrorCode.ASSET_METADATA_MISSING,
+                message=ErrorMessage.ASSET_METADATA_MISSING,
                 type=ErrorType.UNPROCESSABLE,
             )
             failures.append(error)
@@ -388,8 +392,8 @@ async def process_project_assets(
 
         if asset.id is None:
             error = ResultError(
-                code="invalid_asset_id",
-                message="Asset identifier is missing.",
+                code=ErrorCode.INVALID_ASSET_ID,
+                message=ErrorMessage.INVALID_ASSET_ID,
                 type=ErrorType.INTERNAL,
             )
             failures.append(error)
@@ -473,8 +477,9 @@ async def process_project_assets(
         message = first_error.message
 
         if len(failures) > 1:
-            message = (
-                f"{message} ({len(failures) - 1} more asset(s) failed.)"
+            message = MessageTemplate.ASSET_FAILURE_SUMMARY.format(
+                message=message,
+                remaining=len(failures) - 1,
             )
 
         return to_http_response(
@@ -498,9 +503,11 @@ async def process_project_assets(
 
     return to_http_response(
         Result.success(result),
-        success_message=(
-            f"Processed {processed_assets} of {len(assets)} asset(s); "
-            f"{total_chunks} chunk(s) saved; {failed_assets} failed."
+        success_message=MessageTemplate.PROJECT_PROCESS_SUMMARY.format(
+            processed_assets=processed_assets,
+            total_assets=len(assets),
+            total_chunks=total_chunks,
+            failed_assets=failed_assets,
         ),
     )
 
@@ -520,8 +527,8 @@ async def get_chunk_by_id(
         return to_http_response(
             Result.failure(
                 ResultError(
-                    code="invalid_chunk_id",
-                    message="Invalid chunk ID.",
+                    code=ErrorCode.INVALID_CHUNK_ID,
+                    message=ErrorMessage.INVALID_CHUNK_ID,
                     type=ErrorType.VALIDATION,
                 )
             )
@@ -549,8 +556,8 @@ async def get_chunks_by_project_id(
         return to_http_response(
             Result.failure(
                 ResultError(
-                    code="invalid_project_id",
-                    message="Invalid project ID.",
+                    code=ErrorCode.INVALID_PROJECT_ID,
+                    message=ErrorMessage.INVALID_PROJECT_ID,
                     type=ErrorType.VALIDATION,
                 )
             )
@@ -580,8 +587,8 @@ async def delete_chunks_by_project_id(
         return to_http_response(
             Result.failure(
                 ResultError(
-                    code="invalid_project_id",
-                    message="Invalid project ID.",
+                    code=ErrorCode.INVALID_PROJECT_ID,
+                    message=ErrorMessage.INVALID_PROJECT_ID,
                     type=ErrorType.VALIDATION,
                 )
             )
@@ -591,5 +598,5 @@ async def delete_chunks_by_project_id(
 
     return to_http_response(
         result,
-        success_message="Project chunks deleted successfully.",
+        success_message=SuccessMessage.PROJECT_CHUNKS_DELETED,
     )
