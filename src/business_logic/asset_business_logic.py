@@ -78,6 +78,59 @@ class AssetBusinessLogic:
 
         return Result.success(asset)
 
+    async def get_asset_by_file_id(
+        self,
+        project_id: ObjectId,
+        file_id: str,
+    ) -> Result[Asset]:
+        project = await self.project_repository.get_by_id(project_id)
+
+        if project is None:
+            return Result.failure(
+                ResultError(
+                    code="project_not_found",
+                    message="Project not found.",
+                    type=ErrorType.NOT_FOUND,
+                )
+            )
+
+        asset = await self.asset_repository.get_by_project_and_file_id(
+            project_id=project_id,
+            file_id=file_id,
+        )
+
+        if asset is None:
+            return Result.failure(
+                ResultError(
+                    code="asset_not_found",
+                    message="Asset not found for the specified file.",
+                    type=ErrorType.NOT_FOUND,
+                )
+            )
+
+        return Result.success(asset)
+
+    async def get_all_assets_by_project_id(
+        self,
+        project_id: ObjectId,
+    ) -> Result[list[Asset]]:
+        project = await self.project_repository.get_by_id(project_id)
+
+        if project is None:
+            return Result.failure(
+                ResultError(
+                    code="project_not_found",
+                    message="Project not found.",
+                    type=ErrorType.NOT_FOUND,
+                )
+            )
+
+        assets = await self.asset_repository.get_all_by_project_id(
+            project_id
+        )
+
+        return Result.success(assets)
+
     async def get_assets_by_project_id(
         self,
         project_id: ObjectId,

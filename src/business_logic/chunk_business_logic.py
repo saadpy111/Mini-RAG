@@ -1,10 +1,29 @@
 
 from bson import ObjectId
+from langchain_core.documents import Document
+from pymongo.errors import PyMongoError
 
 from src.models.data_chunk import DataChunk
 from src.repositories.data_chunk_repository import DataChunkRepository
 from src.repositories.project_repository import ProjectRepository
 from src.helpers.result_pattern import Result, ResultError, ErrorType
+
+
+def build_data_chunks(
+    documents: list[Document],
+    project_id: ObjectId,
+    asset_id: ObjectId,
+) -> list[DataChunk]:
+    return [
+        DataChunk(
+            chunk_text=document.page_content,
+            chunk_metadata=document.metadata,
+            chunk_order=index,
+            chunk_project_id=project_id,
+            chunk_asset_id=asset_id,
+        )
+        for index, document in enumerate(documents, start=1)
+    ]
 
 
 class ChunkBusinessLogic:
@@ -73,6 +92,17 @@ class ChunkBusinessLogic:
 
         project_id = next(iter(project_ids))
 
+        asset_ids = {chunk.chunk_asset_id for chunk in chunks}
+
+        if len(asset_ids) != 1:
+            return Result.failure(
+                ResultError(
+                    code="asset_id_mismatch",
+                    message="All chunks must belong to the same asset.",
+                    type=ErrorType.VALIDATION,
+                )
+            )
+
         project = await self.project_repository.get_by_id(project_id)
 
         if project is None:
@@ -84,10 +114,109 @@ class ChunkBusinessLogic:
                 )
             )
 
-        inserted_count = await self.chunk_repository.insert_many_chunks(
-            chunks=chunks,
-            batch_size=batch_size,
-        )
+        try:
+            inserted_count = await self.chunk_repository.insert_many_chunks(
+                chunks=chunks,
+                batch_size=batch_size,
+            )
+        except PyMongoError:
+            return Result.failure(
+                ResultError(
+                    code="chunk_persistence_failed",
+                    message="Chunks could not be persisted.",
+                    type=ErrorType.INTERNAL,
+                )
+            )
+
+        return Result.success(inserted_count)
+
+    async def replace_chunks_for_asset(
+        self,
+        project_id: ObjectId,
+        asset_id: ObjectId,
+        chunks: list[DataChunk],
+    ) -> Result[int]:
+        if not chunks:
+            return Result.failure(
+                ResultError(
+                    code="empty_chunks",
+                    message="Chunks list cannot be empty.",
+                    type=ErrorType.VALIDATION,
+                )
+            )
+
+        if any(
+            chunk.chunk_project_id != project_id
+            or chunk.chunk_asset_id != asset_id
+            for chunk in chunks
+        ):
+            return Result.failure(
+                ResultError(
+                    code="chunk_scope_mismatch",
+                    message=(
+                        "All chunks must belong to the specified project "
+                        "and asset."
+                    ),
+                    type=ErrorType.VALIDATION,
+                )
+            )
+
+        try:
+            previous_chunk_ids = (
+                await self.chunk_repository.get_chunk_ids_by_project_and_asset(
+                    project_id=project_id,
+                    asset_id=asset_id,
+                )
+            )
+        except PyMongoError:
+            return Result.failure(
+                ResultError(
+                    code="chunk_lookup_failed",
+                    message="Existing chunks could not be retrieved.",
+                    type=ErrorType.INTERNAL,
+                )
+            )
+
+        insert_result = await self.insert_many_chunks(chunks)
+
+        if not insert_result.is_success:
+            return insert_result
+
+        inserted_count = insert_result.value
+
+        if not previous_chunk_ids:
+            return Result.success(inserted_count)
+
+        try:
+            deleted_count = await self.chunk_repository.delete_by_ids(
+                previous_chunk_ids
+            )
+        except PyMongoError:
+            return Result.failure(
+                ResultError(
+                    code="chunk_cleanup_failed",
+                    message=(
+                        f"{inserted_count} replacement chunks were stored, "
+                        "but the previous chunks could not be removed; "
+                        "old chunks may remain."
+                    ),
+                    type=ErrorType.INTERNAL,
+                )
+            )
+
+        if deleted_count != len(previous_chunk_ids):
+            return Result.failure(
+                ResultError(
+                    code="chunk_cleanup_failed",
+                    message=(
+                        f"{inserted_count} replacement chunks were stored, "
+                        f"but only {deleted_count} of "
+                        f"{len(previous_chunk_ids)} previous chunks were "
+                        "removed; old chunks may remain."
+                    ),
+                    type=ErrorType.INTERNAL,
+                )
+            )
 
         return Result.success(inserted_count)
 

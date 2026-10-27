@@ -60,6 +60,36 @@ class DataChunkRepository:
 
         return DataChunk.model_validate(document)
 
+    async def get_chunk_ids_by_project_and_asset(
+        self,
+        project_id: ObjectId,
+        asset_id: ObjectId,
+    ) -> list[ObjectId]:
+        cursor = self.collection.find(
+            {
+                "chunk_project_id": project_id,
+                "chunk_asset_id": asset_id,
+            },
+            {"_id": 1},
+        )
+
+        documents = await cursor.to_list(length=None)
+
+        return [document["_id"] for document in documents]
+
+    async def delete_by_ids(
+        self,
+        chunk_ids: list[ObjectId],
+    ) -> int:
+        if not chunk_ids:
+            return 0
+
+        result = await self.collection.delete_many(
+            {"_id": {"$in": chunk_ids}}
+        )
+
+        return result.deleted_count
+
     async def get_chunks_by_project_id(
         self,
         project_id: ObjectId,

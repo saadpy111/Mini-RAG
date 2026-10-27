@@ -8,7 +8,10 @@ from fastapi.responses import JSONResponse
 
 from src.api import to_http_response
 from src.business_logic.asset_business_logic import AssetBusinessLogic
-from src.business_logic.chunk_business_logic import ChunkBusinessLogic
+from src.business_logic.chunk_business_logic import (
+    ChunkBusinessLogic,
+    build_data_chunks,
+)
 from src.business_logic.project_business_logic import ProjectBusinessLogic
 from src.dependencies.dependency_injection import (
     get_asset_business_logic,
@@ -17,8 +20,11 @@ from src.dependencies.dependency_injection import (
 )
 from src.dtos import (
     ApiResponse,
-    ProcessedChunkDTO,
+    ProcessedAssetDTO,
+    ProcessedFileDTO,
     ProcessRequest,
+    ProjectProcessRequest,
+    ProjectProcessResultDTO,
     UploadFileDTO,
 )
 from src.helpers.result_pattern import Result, ResultError, ErrorType
@@ -187,13 +193,14 @@ async def upload_document(
 
 @data_router.post(
     "/process/{project_id}",
-    response_model=ApiResponse[list[ProcessedChunkDTO]],
+    response_model=ApiResponse[ProcessedFileDTO],
 )
 async def process_document(
     project_id: str,
     process_request: ProcessRequest,
     project_bl: ProjectBL,
     chunk_bl: ChunkBL,
+    asset_bl: AssetBL,
 ) -> JSONResponse:
     request_result = validate_process_request(process_request)
 
@@ -206,6 +213,27 @@ async def process_document(
         return to_http_response(project_result)
 
     project = project_result.value
+
+    asset_result = await asset_bl.get_asset_by_file_id(
+        project_id=project.id,
+        file_id=process_request.file_id,
+    )
+
+    if not asset_result.is_success:
+        return to_http_response(asset_result)
+
+    asset = asset_result.value
+
+    if asset.id is None:
+        return to_http_response(
+            Result.failure(
+                ResultError(
+                    code="invalid_asset_id",
+                    message="Asset identifier is missing.",
+                    type=ErrorType.INTERNAL,
+                )
+            )
+        )
 
     file_content_result = get_file_content(
         project_id=project_id,
@@ -243,32 +271,237 @@ async def process_document(
         if not delete_result.is_success:
             return to_http_response(delete_result)
 
-    data_chunks = [
-        DataChunk(
-            chunk_text=document.page_content,
-            chunk_metadata=document.metadata,
-            chunk_order=index,
-            chunk_project_id=project.id,
-        )
-        for index, document in enumerate(documents, start=1)
-    ]
+    data_chunks = build_data_chunks(
+        documents=documents,
+        project_id=project.id,
+        asset_id=asset.id,
+    )
 
     save_result = await chunk_bl.insert_many_chunks(data_chunks)
 
     if not save_result.is_success:
         return to_http_response(save_result)
 
-    response_chunks = [
-        ProcessedChunkDTO(
-            page_content=document.page_content,
-            metadata=document.metadata,
-        )
-        for document in documents
-    ]
+    persisted_count = save_result.value or 0
+
+    processing_result = ProcessedFileDTO(
+        project_id=project.project_id,
+        asset_id=asset.id,
+        file_id=process_request.file_id,
+        is_success=True,
+        total_chunks=persisted_count,
+    )
 
     return to_http_response(
-        Result.success(response_chunks),
+        Result.success(processing_result),
         success_message="File processed and chunks saved successfully.",
+    )
+
+
+# Process all project assets
+
+
+def _failed_asset_outcome(
+    asset_id: ObjectId | None,
+    file_id: str | None,
+    error: ResultError,
+) -> ProcessedAssetDTO:
+    return ProcessedAssetDTO(
+        asset_id=asset_id,
+        file_id=file_id,
+        is_success=False,
+        error_code=error.code,
+        error_message=error.message,
+    )
+
+
+@data_router.post(
+    "/process/project/{project_id}",
+    response_model=ApiResponse[ProjectProcessResultDTO],
+)
+async def process_project_assets(
+    project_id: str,
+    project_bl: ProjectBL,
+    asset_bl: AssetBL,
+    chunk_bl: ChunkBL,
+    process_request: ProjectProcessRequest | None = None,
+) -> JSONResponse:
+    project_result = await project_bl.get_project(project_id)
+
+    if not project_result.is_success:
+        return to_http_response(project_result)
+
+    project = project_result.value
+
+    if project.id is None:
+        return to_http_response(
+            Result.failure(
+                ResultError(
+                    code="invalid_project_id",
+                    message="Project identifier is missing.",
+                    type=ErrorType.INTERNAL,
+                )
+            )
+        )
+
+    assets_result = await asset_bl.get_all_assets_by_project_id(project.id)
+
+    if not assets_result.is_success:
+        return to_http_response(assets_result)
+
+    assets = assets_result.value
+
+    if not assets:
+        return to_http_response(
+            Result.failure(
+                ResultError(
+                    code="no_assets_in_project",
+                    message="Project has no assets to process.",
+                    type=ErrorType.UNPROCESSABLE,
+                )
+            )
+        )
+
+    options = process_request or ProjectProcessRequest()
+
+    asset_outcomes: list[ProcessedAssetDTO] = []
+    failures: list[ResultError] = []
+    processed_assets = 0
+    total_chunks = 0
+
+    for asset in assets:
+        file_id = asset.asset_config.get("file_id")
+
+        if not isinstance(file_id, str) or not file_id.strip():
+            error = ResultError(
+                code="asset_metadata_missing",
+                message=(
+                    "Asset metadata does not contain a valid file identifier."
+                ),
+                type=ErrorType.UNPROCESSABLE,
+            )
+            failures.append(error)
+            asset_outcomes.append(
+                _failed_asset_outcome(asset.id, None, error)
+            )
+            continue
+
+        if asset.id is None:
+            error = ResultError(
+                code="invalid_asset_id",
+                message="Asset identifier is missing.",
+                type=ErrorType.INTERNAL,
+            )
+            failures.append(error)
+            asset_outcomes.append(
+                _failed_asset_outcome(None, file_id, error)
+            )
+            continue
+
+        file_content_result = get_file_content(
+            project_id=project.project_id,
+            file_id=file_id,
+        )
+
+        if not file_content_result.is_success:
+            failures.append(file_content_result.error)
+            asset_outcomes.append(
+                _failed_asset_outcome(
+                    asset.id,
+                    file_id,
+                    file_content_result.error,
+                )
+            )
+            continue
+
+        chunks_result = process_file_content(
+            file_content=file_content_result.value,
+            chunk_size=options.chunk_size,
+            overlap_size=options.overlap_size,
+        )
+
+        if not chunks_result.is_success:
+            failures.append(chunks_result.error)
+            asset_outcomes.append(
+                _failed_asset_outcome(
+                    asset.id,
+                    file_id,
+                    chunks_result.error,
+                )
+            )
+            continue
+
+        data_chunks = build_data_chunks(
+            documents=chunks_result.value,
+            project_id=project.id,
+            asset_id=asset.id,
+        )
+
+        save_result = await chunk_bl.replace_chunks_for_asset(
+            project_id=project.id,
+            asset_id=asset.id,
+            chunks=data_chunks,
+        )
+
+        if not save_result.is_success:
+            failures.append(save_result.error)
+            asset_outcomes.append(
+                _failed_asset_outcome(
+                    asset.id,
+                    file_id,
+                    save_result.error,
+                )
+            )
+            continue
+
+        chunk_count = save_result.value or 0
+        processed_assets += 1
+        total_chunks += chunk_count
+        asset_outcomes.append(
+            ProcessedAssetDTO(
+                asset_id=asset.id,
+                file_id=file_id,
+                is_success=True,
+                chunk_count=chunk_count,
+            )
+        )
+
+    failed_assets = len(assets) - processed_assets
+
+    if processed_assets == 0:
+        first_error = failures[0]
+        message = first_error.message
+
+        if len(failures) > 1:
+            message = (
+                f"{message} ({len(failures) - 1} more asset(s) failed.)"
+            )
+
+        return to_http_response(
+            Result.failure(
+                ResultError(
+                    code=first_error.code,
+                    message=message,
+                    type=first_error.type,
+                )
+            )
+        )
+
+    result = ProjectProcessResultDTO(
+        project_id=project.project_id,
+        total_assets=len(assets),
+        processed_assets=processed_assets,
+        failed_assets=failed_assets,
+        total_chunks=total_chunks,
+        assets=asset_outcomes,
+    )
+
+    return to_http_response(
+        Result.success(result),
+        success_message=(
+            f"Processed {processed_assets} of {len(assets)} asset(s); "
+            f"{total_chunks} chunk(s) saved; {failed_assets} failed."
+        ),
     )
 
 
