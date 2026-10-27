@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from src.constants import ErrorCode, ErrorMessage, MessageTemplate
 from src.helpers.result_pattern import ErrorType, Result, ResultError
 
 
@@ -18,8 +19,8 @@ def _validate_project_id(project_id: str) -> ResultError | None:
         or Path(project_id).name != project_id
     ):
         return ResultError(
-            code="invalid_project_id",
-            message="Invalid project ID.",
+            code=ErrorCode.INVALID_PROJECT_ID,
+            message=ErrorMessage.INVALID_PROJECT_ID,
             type=ErrorType.VALIDATION,
         )
 
@@ -43,8 +44,10 @@ def get_project_path(project_id: str) -> Result[Path]:
     if not project_dir.is_dir():
         return Result.failure(
             ResultError(
-                code="project_not_found",
-                message=f"Project '{project_id}' was not found.",
+                code=ErrorCode.PROJECT_NOT_FOUND,
+                message=MessageTemplate.PROJECT_NOT_FOUND.format(
+                    project_id=project_id,
+                ),
                 type=ErrorType.NOT_FOUND,
             )
         )

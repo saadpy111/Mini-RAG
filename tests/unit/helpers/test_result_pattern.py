@@ -36,6 +36,22 @@ def test_failure_accepts_plain_message():
     assert result.error.type is ErrorType.BUSINESS_RULE
 
 
+def test_failure_defaults_to_validation_error_type():
+    result = Result.failure("Invalid input.")
+
+    assert result.error.type is ErrorType.VALIDATION
+
+
+def test_result_error_string_is_its_message():
+    error = ResultError(
+        code="file_not_found",
+        message="File was not found.",
+        type=ErrorType.NOT_FOUND,
+    )
+
+    assert str(error) == "File was not found."
+
+
 def test_success_cannot_contain_error():
     with pytest.raises(ValueError):
         Result(

@@ -2,6 +2,7 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
 from src.api import to_http_response
+from src.constants import SuccessMessage
 from src.dtos import ApiResponse
 from src.helpers import config
 from src.helpers.result_pattern import Result
@@ -26,5 +27,5 @@ async def read_root() -> JSONResponse:
 
     return to_http_response(
         result,
-        success_message="Application information retrieved successfully.",
+        success_message=SuccessMessage.APPLICATION_INFO_RETRIEVED,
     )

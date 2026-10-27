@@ -47,6 +47,23 @@ class AssetRepository:
 
         return Asset.model_validate(document)
 
+    async def get_by_project_and_file_id(
+        self,
+        project_id: ObjectId,
+        file_id: str,
+    ) -> Asset | None:
+        document = await self._collection.find_one(
+            {
+                "asset_project_id": project_id,
+                "asset_config.file_id": file_id,
+            }
+        )
+
+        if document is None:
+            return None
+
+        return Asset.model_validate(document)
+
     async def get_by_project_id(
         self,
         project_id: ObjectId,
@@ -62,6 +79,23 @@ class AssetRepository:
         )
 
         documents = await cursor.to_list(length=limit)
+
+        return [
+            Asset.model_validate(document)
+            for document in documents
+        ]
+
+    async def get_all_by_project_id(
+        self,
+        project_id: ObjectId,
+    ) -> list[Asset]:
+        cursor = (
+            self._collection
+            .find({"asset_project_id": project_id})
+            .sort("asset_pushed_at", DESCENDING)
+        )
+
+        documents = await cursor.to_list(length=None)
 
         return [
             Asset.model_validate(document)

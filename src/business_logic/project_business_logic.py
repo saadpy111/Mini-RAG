@@ -1,6 +1,7 @@
 
 from src.models.project import Project
 from src.repositories.project_repository import ProjectRepository
+from src.constants import ErrorCode, ErrorMessage
 from src.helpers.result_pattern import ErrorType, Result, ResultError
 
 
@@ -16,8 +17,8 @@ class ProjectBusinessLogic:
         if existing_project is not None:
             return Result.failure(
                 ResultError(
-                    code="project_already_exists",
-                    message="A project with this ID already exists.",
+                    code=ErrorCode.PROJECT_ALREADY_EXISTS,
+                    message=ErrorMessage.PROJECT_ALREADY_EXISTS,
                     type=ErrorType.CONFLICT,
                 )
             )
@@ -37,8 +38,8 @@ class ProjectBusinessLogic:
         if project is None:
             return Result.failure(
                 ResultError(
-                    code="project_not_found",
-                    message="Project was not found.",
+                    code=ErrorCode.PROJECT_NOT_FOUND,
+                    message=ErrorMessage.PROJECT_WAS_NOT_FOUND,
                     type=ErrorType.NOT_FOUND,
                 )
             )

@@ -3,6 +3,7 @@ from bson import ObjectId
 from pymongo import InsertOne
 from pymongo.asynchronous.database import AsyncDatabase
 
+from src.constants import ErrorMessage
 from src.models.data_chunk import DataChunk
 
 
@@ -27,7 +28,7 @@ class DataChunkRepository:
         batch_size: int = 100,
     ) -> int:
         if batch_size <= 0:
-            raise ValueError("batch_size must be greater than zero")
+            raise ValueError(ErrorMessage.INVALID_BATCH_SIZE_GUARD)
 
         if not chunks:
             return 0
@@ -60,6 +61,36 @@ class DataChunkRepository:
 
         return DataChunk.model_validate(document)
 
+    async def get_chunk_ids_by_project_and_asset(
+        self,
+        project_id: ObjectId,
+        asset_id: ObjectId,
+    ) -> list[ObjectId]:
+        cursor = self.collection.find(
+            {
+                "chunk_project_id": project_id,
+                "chunk_asset_id": asset_id,
+            },
+            {"_id": 1},
+        )
+
+        documents = await cursor.to_list(length=None)
+
+        return [document["_id"] for document in documents]
+
+    async def delete_by_ids(
+        self,
+        chunk_ids: list[ObjectId],
+    ) -> int:
+        if not chunk_ids:
+            return 0
+
+        result = await self.collection.delete_many(
+            {"_id": {"$in": chunk_ids}}
+        )
+
+        return result.deleted_count
+
     async def get_chunks_by_project_id(
         self,
         project_id: ObjectId,
@@ -67,10 +98,10 @@ class DataChunkRepository:
         page_num: int,
     ) -> list[DataChunk]:
         if page_size <= 0:
-            raise ValueError("page_size must be greater than zero")
+            raise ValueError(ErrorMessage.INVALID_PAGE_SIZE_GUARD)
 
         if page_num <= 0:
-            raise ValueError("page_num must be greater than zero")
+            raise ValueError(ErrorMessage.INVALID_PAGE_NUM_GUARD)
 
         filter_query = {"chunk_project_id": project_id}
         skip_count = (page_num - 1) * page_size

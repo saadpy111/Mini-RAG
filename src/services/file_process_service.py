@@ -6,9 +6,13 @@ from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from pymupdf import FileDataError
 
+from src.constants import ErrorCode, ErrorMessage, MessageTemplate
 from src.enums import ProcessingEnum
 from src.helpers.result_pattern import ErrorType, Result, ResultError
 from src.services.project_service import get_project_path
+
+
+from pathlib import Path, PureWindowsPath
 
 
 def _validate_file_id(file_id: str) -> ResultError | None:
@@ -16,15 +20,15 @@ def _validate_file_id(file_id: str) -> ResultError | None:
         not file_id
         or file_id in {".", ".."}
         or Path(file_id).name != file_id
+        or PureWindowsPath(file_id).name != file_id
     ):
         return ResultError(
-            code="invalid_file_id",
-            message="Invalid file ID.",
+            code=ErrorCode.INVALID_FILE_ID,
+            message=ErrorMessage.INVALID_FILE_ID,
             type=ErrorType.VALIDATION,
         )
 
     return None
-
 
 def get_file_path(project_id: str, file_id: str) -> Result[Path]:
     validation_error = _validate_file_id(file_id)
@@ -44,16 +48,19 @@ def get_file_path(project_id: str, file_id: str) -> Result[Path]:
     except OSError:
         return Result.failure(
             ResultError(
-                code="file_lookup_error",
-                message="Failed to access the project files.",
+                code=ErrorCode.FILE_LOOKUP_ERROR,
+                message=ErrorMessage.FILE_LOOKUP_ERROR,
                 type=ErrorType.INTERNAL,
             )
         )
 
     return Result.failure(
         ResultError(
-            code="file_not_found",
-            message=f"File '{file_id}' was not found in project '{project_id}'.",
+            code=ErrorCode.FILE_NOT_FOUND,
+            message=MessageTemplate.FILE_NOT_FOUND.format(
+                file_id=file_id,
+                project_id=project_id,
+            ),
             type=ErrorType.NOT_FOUND,
         )
     )
@@ -75,8 +82,10 @@ def get_file_loader(project_id: str, file_id: str) -> Result[BaseLoader]:
 
     return Result.failure(
         ResultError(
-            code="unsupported_file_type",
-            message=f"Unsupported file type: {extension}.",
+            code=ErrorCode.UNSUPPORTED_FILE_TYPE,
+            message=MessageTemplate.UNSUPPORTED_FILE_TYPE.format(
+                extension=extension,
+            ),
             type=ErrorType.VALIDATION,
         )
     )
@@ -92,24 +101,24 @@ def get_file_content(project_id: str, file_id: str) -> Result[list[Document]]:
     except FileDataError:
         return Result.failure(
             ResultError(
-                code="invalid_file_content",
-                message="The file content could not be parsed.",
+                code=ErrorCode.INVALID_FILE_CONTENT,
+                message=ErrorMessage.INVALID_FILE_CONTENT_PARSED,
                 type=ErrorType.UNPROCESSABLE,
             )
         )
     except (RuntimeError, ValueError):
         return Result.failure(
             ResultError(
-                code="invalid_file_content",
-                message="The file content could not be processed.",
+                code=ErrorCode.INVALID_FILE_CONTENT,
+                message=ErrorMessage.INVALID_FILE_CONTENT_PROCESSED,
                 type=ErrorType.UNPROCESSABLE,
             )
         )
     except OSError:
         return Result.failure(
             ResultError(
-                code="file_read_error",
-                message="Failed to read the file content.",
+                code=ErrorCode.FILE_READ_ERROR,
+                message=ErrorMessage.FILE_READ_ERROR,
                 type=ErrorType.INTERNAL,
             )
         )
@@ -123,8 +132,8 @@ def get_file_content(project_id: str, file_id: str) -> Result[list[Document]]:
     if not documents:
         return Result.failure(
             ResultError(
-                code="empty_document_content",
-                message="The file does not contain any processable content.",
+                code=ErrorCode.EMPTY_DOCUMENT_CONTENT,
+                message=ErrorMessage.EMPTY_DOCUMENT_CONTENT,
                 type=ErrorType.UNPROCESSABLE,
             )
         )
@@ -140,8 +149,8 @@ def process_file_content(
     if chunk_size <= 0:
         return Result.failure(
             ResultError(
-                code="invalid_chunk_size",
-                message="chunk_size must be greater than zero.",
+                code=ErrorCode.INVALID_CHUNK_SIZE,
+                message=ErrorMessage.INVALID_CHUNK_SIZE,
                 type=ErrorType.VALIDATION,
             )
         )
@@ -149,8 +158,8 @@ def process_file_content(
     if overlap_size < 0:
         return Result.failure(
             ResultError(
-                code="invalid_overlap_size",
-                message="overlap_size cannot be negative.",
+                code=ErrorCode.INVALID_OVERLAP_SIZE,
+                message=ErrorMessage.INVALID_OVERLAP_SIZE,
                 type=ErrorType.VALIDATION,
             )
         )
@@ -158,8 +167,8 @@ def process_file_content(
     if overlap_size >= chunk_size:
         return Result.failure(
             ResultError(
-                code="invalid_chunk_configuration",
-                message="overlap_size must be smaller than chunk_size.",
+                code=ErrorCode.INVALID_CHUNK_CONFIGURATION,
+                message=ErrorMessage.INVALID_CHUNK_CONFIGURATION,
                 type=ErrorType.VALIDATION,
             )
         )
@@ -180,8 +189,8 @@ def process_file_content(
     if not chunks:
         return Result.failure(
             ResultError(
-                code="empty_document_content",
-                message="No content found to process.",
+                code=ErrorCode.EMPTY_DOCUMENT_CONTENT,
+                message=ErrorMessage.NO_CONTENT_TO_PROCESS,
                 type=ErrorType.UNPROCESSABLE,
             )
         )
