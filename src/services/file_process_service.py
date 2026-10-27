@@ -12,11 +12,15 @@ from src.helpers.result_pattern import ErrorType, Result, ResultError
 from src.services.project_service import get_project_path
 
 
+from pathlib import Path, PureWindowsPath
+
+
 def _validate_file_id(file_id: str) -> ResultError | None:
     if (
         not file_id
         or file_id in {".", ".."}
         or Path(file_id).name != file_id
+        or PureWindowsPath(file_id).name != file_id
     ):
         return ResultError(
             code=ErrorCode.INVALID_FILE_ID,
@@ -25,7 +29,6 @@ def _validate_file_id(file_id: str) -> ResultError | None:
         )
 
     return None
-
 
 def get_file_path(project_id: str, file_id: str) -> Result[Path]:
     validation_error = _validate_file_id(file_id)
