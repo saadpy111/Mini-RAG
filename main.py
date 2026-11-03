@@ -1,11 +1,24 @@
-from fastapi import FastAPI
-from src.api import register_exception_handlers
-from src.routes import data_router , base_router
+from contextlib import asynccontextmanager
 
-from src.db.mongodb import lifespan
+from fastapi import FastAPI
+
+from src.api import register_exception_handlers
+from src.db.mongodb import lifespan as mongodb_lifespan
+from src.llm.lifecycle import llm_lifespan
+from src.routes import base_router, data_router, llm_router
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    async with mongodb_lifespan(app):
+        async with llm_lifespan(app):
+            yield
+
+
 app = FastAPI(lifespan=lifespan)
 
 register_exception_handlers(app)
 
 app.include_router(base_router)
 app.include_router(data_router)
+app.include_router(llm_router)

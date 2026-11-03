@@ -8,3 +8,4 @@ PyMuPDF==1.28.2
 langchain-community==0.4.2
 pathlib==1.0.1
 async-pymongo==0.1.12
+httpx==0.28.1

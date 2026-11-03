@@ -14,6 +14,7 @@ class ErrorType(str, Enum):
     CONFLICT = "conflict"
     PAYLOAD_TOO_LARGE = "payload_too_large"
     UNPROCESSABLE = "unprocessable"
+    SERVICE_UNAVAILABLE = "service_unavailable"
     INTERNAL = "internal"
 
 

@@ -51,6 +51,19 @@ class ErrorCode(StrEnum):
     # Project-level processing
     NO_ASSETS_IN_PROJECT = "no_assets_in_project"
 
+    # LLM integration
+    LLM_PROVIDER_UNSUPPORTED = "llm_provider_unsupported"
+    LLM_MODEL_NOT_APPROVED = "llm_model_not_approved"
+    LLM_API_KEY_MISSING = "llm_api_key_missing"
+    LLM_AUTH_FAILED = "llm_auth_failed"
+    LLM_RATE_LIMITED = "llm_rate_limited"
+    LLM_TIMEOUT = "llm_timeout"
+    LLM_PROVIDER_ERROR = "llm_provider_error"
+    LLM_INVALID_RESPONSE = "llm_invalid_response"
+    EMPTY_EMBEDDING_INPUT = "empty_embedding_input"
+    INVALID_CHAT_MESSAGES = "invalid_chat_messages"
+    LLM_TEST_ENDPOINTS_DISABLED = "llm_test_endpoints_disabled"
+
     # Pagination
     INVALID_PAGINATION = "invalid_pagination"
     PAGE_SIZE_TOO_LARGE = "page_size_too_large"
@@ -67,6 +80,10 @@ class SuccessMessage(StrEnum):
     FILE_UPLOADED = "File uploaded and asset metadata saved successfully."
     FILE_PROCESSED = "File processed and chunks saved successfully."
     PROJECT_CHUNKS_DELETED = "Project chunks deleted successfully."
+    LLM_CHAT_TEST_COMPLETED = "LLM chat test completed successfully."
+    LLM_EMBEDDING_TEST_COMPLETED = (
+        "LLM embedding test completed successfully."
+    )
 
 
 class ErrorMessage(StrEnum):
@@ -138,6 +155,27 @@ class ErrorMessage(StrEnum):
 
     # Project-level processing
     NO_ASSETS_IN_PROJECT = "Project has no assets to process."
+
+    # LLM integration
+    LLM_PROVIDER_UNSUPPORTED = "The configured LLM provider is not supported."
+    LLM_MODEL_NOT_APPROVED = (
+        "The requested model is not approved for this operation."
+    )
+    LLM_API_KEY_MISSING = "The LLM provider API key is not configured."
+    LLM_AUTH_FAILED = (
+        "The LLM provider rejected the configured credentials."
+    )
+    LLM_RATE_LIMITED = (
+        "The LLM provider rate limit was exceeded. Try again later."
+    )
+    LLM_TIMEOUT = "The LLM provider request timed out."
+    LLM_PROVIDER_ERROR = "The LLM provider request failed."
+    LLM_INVALID_RESPONSE = (
+        "The LLM provider returned an unexpected response."
+    )
+    EMPTY_EMBEDDING_INPUT = "Embedding input cannot be empty."
+    INVALID_CHAT_MESSAGES = "Chat messages are missing or invalid."
+    LLM_TEST_ENDPOINTS_DISABLED = "LLM diagnostic endpoints are disabled."
 
     # Pagination
     INVALID_PAGINATION = (
