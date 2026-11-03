@@ -25,6 +25,7 @@ The project uses MongoDB for data persistence and supports processing PDF and TX
 - RESTful API built with FastAPI.
 - Asynchronous MongoDB access using PyMongo.
 - PDF and TXT document processing.
+- Provider-agnostic chat and embedding integration with an OpenRouter adapter.
 - Repository and business logic layers.
 - Consistent error handling using the Result Pattern.
 - Unit and integration tests.
@@ -109,6 +110,30 @@ Use `.env.example` as the source of truth for the required variable names.
 
 **Security:** Never commit `.env` or expose API keys, database credentials, or other secrets in your repository. Keep `.env.example` limited to variable names and safe placeholder values.
 
+### LLM Provider Settings
+
+The LLM integration is configured through `.env` (use `.env.examples` as the template):
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `OPENROUTER_API_KEY` | empty | OpenRouter API key. |
+| `CHAT_PROVIDER` | `openrouter` | Chat provider identifier. |
+| `CHAT_MODEL` | `nvidia/nemotron-3.5-lightning:free` | Default chat model. |
+| `EMBEDDING_PROVIDER` | `openrouter` | Embedding provider identifier. |
+| `EMBEDDING_MODEL` | `nvidia/nemotron-3.5-embed-1b:free` | Default embedding model. |
+| `LLM_CONNECT_TIMEOUT` | `10` | Provider connect timeout in seconds. |
+| `LLM_READ_TIMEOUT` | `60` | Provider read timeout in seconds. |
+| `LLM_TEST_ENDPOINTS_ENABLED` | `false` | Enables the two diagnostic endpoints. |
+
+Provider selection is separate from model selection. General provider/model selection is shared application configuration; credentials and HTTP details are owned by each provider adapter. The OpenRouter adapter reads `OPENROUTER_API_KEY` through its own Pydantic settings.
+
+The approved models are:
+
+- Chat: `nvidia/nemotron-3.5-lightning:free`, `liquid/lfm-2.5-2.6b:free`.
+- Embeddings: `nvidia/nemotron-3.5-embed-1b:free`, `liquid/lfm-2.5-embedding-350m:free`.
+
+To add a provider, implement the general chat and/or embedding contract under `src/llm/providers/`, add its provider-specific configuration and an environment-based builder, then register the builder in `src/llm/providers/provider_registry.py`.
+
 ## Running the Application
 
 Make sure your Conda environment is active and the required services are available.
@@ -136,6 +161,32 @@ FastAPI automatically generates interactive API documentation.
 - **OpenAPI schema:** `/openapi.json`
 
 Use Swagger UI to inspect available endpoints, review request and response schemas, and send test requests.
+
+### LLM Diagnostic Endpoints
+
+Set `LLM_TEST_ENDPOINTS_ENABLED=true` in `.env` to enable the two manual test endpoints. Both make real calls through the configured provider.
+
+**Chat** — `POST /api/v1/llm/test/chat`
+
+```json
+{
+  "message": "Explain what RAG is.",
+  "model": "nvidia/nemotron-3.5-lightning:free"
+}
+```
+
+The response contains `data.model` and the model's `data.content`.
+
+**Embeddings** — `POST /api/v1/llm/test/embeddings`
+
+```json
+{
+  "text": "FastAPI is a Python framework.",
+  "model": "nvidia/nemotron-3.5-embed-1b:free"
+}
+```
+
+The response contains `data.model`, `data.dimensions` and the full `data.embedding` vector.
 
 ## Testing
 
@@ -209,6 +260,7 @@ Mini-RAG/
 ├── src/
 │   ├── business_logic/
 │   ├── helpers/
+│   ├── llm/
 │   ├── models/
 │   ├── repositories/
 │   ├── routes/
@@ -231,6 +283,7 @@ Responsibilities may include:
 - `routes/`: HTTP endpoints and request handling.
 - `services/`: Document processing and supporting services.
 - `helpers/`: Shared configuration and utility functions.
+- `llm/`: Provider-agnostic LLM contracts, factories, and provider adapters.
 - `tests/`: Unit tests and integration tests.
 
 Some directories may contain additional subdirectories or files depending on the current implementation.
@@ -255,6 +308,14 @@ python -c "import sys; print(sys.executable)"
 ### Integration Tests Are Skipped
 
 Integration tests may be skipped if the test MongoDB server is unavailable. Review the pytest output for the reason before treating the test suite as fully verified.
+
+### LLM Provider Errors
+
+- `llm_api_key_missing`: set `OPENROUTER_API_KEY` in `.env`.
+- `llm_auth_failed`: verify that the key is valid and active.
+- `llm_rate_limited`: the free-tier limit was reached; wait and retry. The application does not retry automatically.
+- `llm_timeout` / `llm_provider_error`: retry or check OpenRouter availability.
+- `llm_invalid_response`: the provider returned no usable text or vector; retry or select the other approved model.
 
 ### Dependency Installation Errors
 
