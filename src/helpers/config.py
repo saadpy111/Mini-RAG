@@ -6,6 +6,7 @@ from src.llm.model_catalog import (
     DEFAULT_CHAT_MODEL,
     DEFAULT_EMBEDDING_MODEL,
 )
+from src.vector_db.VectorDBModels import VectorCollectionConfig
 
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
@@ -37,6 +38,13 @@ class Settings(BaseSettings):
 
     # Manual diagnostic endpoints (real provider calls), disabled by default.
     llm_test_endpoints_enabled: bool = False
+
+    # Vector database selection. Each collection has its own vector space and
+    # therefore its own dimension. Connection credentials stay provider-specific.
+    vector_db_provider: str = Field(default="qdrant", min_length=1)
+    vector_db_collections: list[VectorCollectionConfig] = Field(
+        default_factory=list
+    )
 
     model_config = SettingsConfigDict(
         env_file=ROOT_DIR / ".env",
