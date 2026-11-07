@@ -64,6 +64,24 @@ class ErrorCode(StrEnum):
     INVALID_CHAT_MESSAGES = "invalid_chat_messages"
     LLM_TEST_ENDPOINTS_DISABLED = "llm_test_endpoints_disabled"
 
+    # Vector database
+    VECTOR_DB_PROVIDER_UNSUPPORTED = "vector_db_provider_unsupported"
+    VECTOR_DB_CONFIGURATION_INVALID = "vector_db_configuration_invalid"
+    VECTOR_DB_CONNECTION_FAILED = "vector_db_connection_failed"
+    VECTOR_DB_COLLECTION_INITIALIZATION_FAILED = (
+        "vector_db_collection_initialization_failed"
+    )
+    VECTOR_DB_COLLECTION_MISMATCH = "vector_db_collection_mismatch"
+    VECTOR_DB_COLLECTION_NOT_CONFIGURED = "vector_db_collection_not_configured"
+    VECTOR_DB_INVALID_VECTOR_ID = "vector_db_invalid_vector_id"
+    VECTOR_DB_INVALID_VECTOR_DIMENSION = "vector_db_invalid_vector_dimension"
+    VECTOR_DB_INVALID_PAYLOAD = "vector_db_invalid_payload"
+    VECTOR_DB_INVALID_PROJECT_FILTER = "vector_db_invalid_project_filter"
+    VECTOR_DB_INVALID_SEARCH_LIMIT = "vector_db_invalid_search_limit"
+    VECTOR_DB_UPSERT_FAILED = "vector_db_upsert_failed"
+    VECTOR_DB_SEARCH_FAILED = "vector_db_search_failed"
+    VECTOR_DB_DELETE_FAILED = "vector_db_delete_failed"
+
     # Pagination
     INVALID_PAGINATION = "invalid_pagination"
     PAGE_SIZE_TOO_LARGE = "page_size_too_large"
@@ -177,6 +195,39 @@ class ErrorMessage(StrEnum):
     INVALID_CHAT_MESSAGES = "Chat messages are missing or invalid."
     LLM_TEST_ENDPOINTS_DISABLED = "LLM diagnostic endpoints are disabled."
 
+    # Vector database
+    VECTOR_DB_PROVIDER_UNSUPPORTED = (
+        "The configured vector database provider is not supported."
+    )
+    VECTOR_DB_CONFIGURATION_INVALID = (
+        "The vector database configuration is invalid."
+    )
+    VECTOR_DB_CONNECTION_FAILED = "The vector database connection failed."
+    VECTOR_DB_COLLECTION_INITIALIZATION_FAILED = (
+        "The vector database collection could not be initialized."
+    )
+    VECTOR_DB_COLLECTION_MISMATCH = (
+        "The vector database collection configuration does not match "
+        "the application configuration."
+    )
+    VECTOR_DB_COLLECTION_NOT_CONFIGURED = (
+        "The requested vector database collection is not configured."
+    )
+    VECTOR_DB_INVALID_VECTOR_ID = "The vector ID is not valid."
+    VECTOR_DB_INVALID_VECTOR_DIMENSION = (
+        "The vector dimension does not match the collection configuration."
+    )
+    VECTOR_DB_INVALID_PAYLOAD = (
+        "Vector metadata must include a non-empty project ID."
+    )
+    VECTOR_DB_INVALID_PROJECT_FILTER = (
+        "A non-empty project ID is required for this vector operation."
+    )
+    VECTOR_DB_INVALID_SEARCH_LIMIT = "Search limit must be greater than zero."
+    VECTOR_DB_UPSERT_FAILED = "The vectors could not be stored."
+    VECTOR_DB_SEARCH_FAILED = "The vector search failed."
+    VECTOR_DB_DELETE_FAILED = "The vectors could not be deleted."
+
     # Pagination
     INVALID_PAGINATION = (
         "Page size and page number must be greater than zero."
@@ -214,4 +265,32 @@ class MessageTemplate(StrEnum):
         "{inserted_count} replacement chunks were stored, but only "
         "{deleted_count} of {expected_count} previous chunks were removed; "
         "old chunks may remain."
+    )
+
+    # Vector database
+    VECTOR_DB_COLLECTION_NOT_CONFIGURED = (
+        "Vector collection '{collection_name}' is not configured."
+    )
+    VECTOR_DB_COLLECTION_DIMENSION_MISMATCH = (
+        "Vector collection '{collection_name}' has dimension {actual}, "
+        "expected {expected}."
+    )
+    VECTOR_DB_COLLECTION_DISTANCE_MISMATCH = (
+        "Vector collection '{collection_name}' uses distance '{actual}', "
+        "expected '{expected}'."
+    )
+    VECTOR_DB_COLLECTION_LAYOUT_UNSUPPORTED = (
+        "Vector collection '{collection_name}' does not use a single "
+        "unnamed vector configuration."
+    )
+    VECTOR_DB_INVALID_VECTOR_DIMENSION = (
+        "Vector dimension {actual} does not match collection "
+        "'{collection_name}' dimension {expected}."
+    )
+    VECTOR_DB_INVALID_VECTOR_ID = (
+        "Vector ID '{vector_id}' is not a valid UUID."
+    )
+    VECTOR_DB_DUPLICATE_COLLECTION = (
+        "Vector collection name '{collection_name}' is configured more "
+        "than once."
     )

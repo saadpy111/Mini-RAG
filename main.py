@@ -6,13 +6,15 @@ from src.api import register_exception_handlers
 from src.db.mongodb import lifespan as mongodb_lifespan
 from src.llm.lifecycle import llm_lifespan
 from src.routes import base_router, data_router, llm_router
+from src.vector_db.VectorDBLifecycle import vector_db_lifespan
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     async with mongodb_lifespan(app):
         async with llm_lifespan(app):
-            yield
+            async with vector_db_lifespan(app):
+                yield
 
 
 app = FastAPI(lifespan=lifespan)
