@@ -120,6 +120,21 @@ class DataChunkRepository:
             for document in documents
         ]
 
+    async def get_all_by_project_id(
+        self,
+        project_id: ObjectId,
+    ) -> list[DataChunk]:
+        cursor = self.collection.find(
+            {"chunk_project_id": project_id}
+        )
+
+        documents = await cursor.to_list(length=None)
+
+        return [
+            DataChunk.model_validate(document)
+            for document in documents
+        ]
+
     async def delete_by_project_id(
         self,
         project_id: ObjectId,

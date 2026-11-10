@@ -46,6 +46,7 @@ class ErrorCode(StrEnum):
     CHUNK_CLEANUP_FAILED = "chunk_cleanup_failed"
     CHUNK_NOT_FOUND = "chunk_not_found"
     INVALID_CHUNK_ID = "invalid_chunk_id"
+    NO_CHUNKS_TO_INDEX = "no_chunks_to_index"
 
     # Project-level processing
     NO_ASSETS_IN_PROJECT = "no_assets_in_project"
@@ -80,6 +81,10 @@ class ErrorCode(StrEnum):
     VECTOR_DB_UPSERT_FAILED = "vector_db_upsert_failed"
     VECTOR_DB_SEARCH_FAILED = "vector_db_search_failed"
     VECTOR_DB_DELETE_FAILED = "vector_db_delete_failed"
+    VECTOR_DB_PROJECT_VECTOR_LOOKUP_FAILED = (
+        "vector_db_project_vector_lookup_failed"
+    )
+    EMPTY_SEARCH_QUERY = "empty_search_query"
 
     # Pagination
     INVALID_PAGINATION = "invalid_pagination"

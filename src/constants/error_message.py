@@ -67,6 +67,7 @@ class ErrorMessage(StrEnum):
     CHUNK_PERSISTENCE_FAILED = "Chunks could not be persisted."
     CHUNK_LOOKUP_FAILED = "Existing chunks could not be retrieved."
     CHUNK_NOT_FOUND = "Chunk not found."
+    NO_CHUNKS_TO_INDEX = "Project has no chunks to index."
 
     # Project-level processing
     NO_ASSETS_IN_PROJECT = "Project has no assets to process."
@@ -124,6 +125,10 @@ class ErrorMessage(StrEnum):
     VECTOR_DB_UPSERT_FAILED = "The vectors could not be stored."
     VECTOR_DB_SEARCH_FAILED = "The vector search failed."
     VECTOR_DB_DELETE_FAILED = "The vectors could not be deleted."
+    VECTOR_DB_PROJECT_VECTOR_LOOKUP_FAILED = (
+        "The project vectors could not be retrieved."
+    )
+    EMPTY_SEARCH_QUERY = "Search query cannot be empty."
 
     # Pagination
     INVALID_PAGINATION = (

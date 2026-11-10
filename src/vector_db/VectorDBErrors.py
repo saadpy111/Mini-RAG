@@ -179,3 +179,10 @@ def delete_failed_error() -> ResultError:
         ErrorCode.VECTOR_DB_DELETE_FAILED,
         ErrorMessage.VECTOR_DB_DELETE_FAILED,
     )
+
+
+def project_vector_lookup_failed_error() -> ResultError:
+    return _error(
+        ErrorCode.VECTOR_DB_PROJECT_VECTOR_LOOKUP_FAILED,
+        ErrorMessage.VECTOR_DB_PROJECT_VECTOR_LOOKUP_FAILED,
+    )

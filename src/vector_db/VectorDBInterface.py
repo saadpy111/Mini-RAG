@@ -46,6 +46,14 @@ class VectorStore(ABC):
         """Delete vectors by their application-level identifiers."""
 
     @abstractmethod
+    async def list_ids_by_project(
+        self,
+        collection_name: str,
+        project_id: str,
+    ) -> Result[list[str]]:
+        """Return every vector ID belonging to a project in the collection."""
+
+    @abstractmethod
     async def delete_by_project(
         self,
         collection_name: str,

@@ -1,7 +1,8 @@
 from pathlib import Path
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from src.constants import MessageTemplate
 from src.llm.model_catalog import (
     DEFAULT_CHAT_MODEL,
     DEFAULT_EMBEDDING_MODEL,
@@ -45,6 +46,43 @@ class Settings(BaseSettings):
     vector_db_collections: list[VectorCollectionConfig] = Field(
         default_factory=list
     )
+    vector_db_collection: str | None = Field(
+        default=None,
+        description=(
+            "Collection used for indexing and search. Defaults to the "
+            "first configured collection."
+        ),
+    )
+
+    @property
+    def active_vector_collection_name(self) -> str:
+        if self.vector_db_collection and self.vector_db_collection.strip():
+            return self.vector_db_collection.strip()
+
+        if not self.vector_db_collections:
+            return ""
+
+        return self.vector_db_collections[0].name
+
+    @model_validator(mode="after")
+    def validate_active_vector_collection(self) -> "Settings":
+        configured_names = {
+            collection.name
+            for collection in self.vector_db_collections
+        }
+        active_name = self.active_vector_collection_name
+
+        if not configured_names and not active_name:
+            return self
+
+        if active_name not in configured_names:
+            raise ValueError(
+                MessageTemplate.VECTOR_DB_COLLECTION_NOT_CONFIGURED.format(
+                    collection_name=active_name,
+                )
+            )
+
+        return self
 
     model_config = SettingsConfigDict(
         env_file=ROOT_DIR / ".env",
