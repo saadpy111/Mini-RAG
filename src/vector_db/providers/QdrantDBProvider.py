@@ -23,6 +23,7 @@ from src.vector_db.VectorDBErrors import (
     invalid_search_limit_error,
     invalid_vector_dimension_error,
     invalid_vector_id_error,
+    project_vector_lookup_failed_error,
     search_failed_error,
     upsert_failed_error,
 )
@@ -42,6 +43,8 @@ DISTANCE_MAP = {
     DistanceMethodEnums.DOT: qdrant_models.Distance.DOT,
     DistanceMethodEnums.EUCLIDEAN: qdrant_models.Distance.EUCLID,
 }
+
+PROJECT_SCROLL_BATCH_SIZE = 256
 
 
 class QdrantDBProvider(VectorDBInterface):
@@ -237,6 +240,49 @@ class QdrantDBProvider(VectorDBInterface):
             return Result.failure(delete_failed_error())
 
         return Result.success(None)
+
+    async def list_ids_by_project(
+        self,
+        collection_name: str,
+        project_id: str,
+    ) -> Result[list[str]]:
+        config_result = self._get_collection_config(collection_name)
+        if not config_result.is_success:
+            return config_result
+
+        normalized_project_id = str(project_id).strip()
+        if not normalized_project_id:
+            return Result.failure(invalid_project_filter_error())
+
+        vector_ids: list[str] = []
+        offset = None
+
+        try:
+            while True:
+                points, offset = await self._client.scroll(
+                    collection_name=collection_name,
+                    scroll_filter=self._project_filter(
+                        normalized_project_id,
+                    ),
+                    limit=PROJECT_SCROLL_BATCH_SIZE,
+                    offset=offset,
+                    with_payload=False,
+                    with_vectors=False,
+                )
+
+                vector_ids.extend(str(point.id) for point in points)
+
+                if offset is None:
+                    break
+        except Exception:
+            logger.exception(
+                "Failed to list vectors for a project in Qdrant "
+                "collection '%s'.",
+                collection_name,
+            )
+            return Result.failure(project_vector_lookup_failed_error())
+
+        return Result.success(vector_ids)
 
     async def delete_by_project(
         self,

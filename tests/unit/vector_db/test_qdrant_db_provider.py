@@ -673,3 +673,65 @@ def test_close_does_not_raise_on_failure():
     asyncio.run(provider.close())
 
     client.close.assert_awaited_once_with()
+
+
+def test_list_ids_by_project_filters_and_paginates_scroll():
+    client = AsyncMock()
+    first_id = str(uuid4())
+    second_id = str(uuid4())
+    client.scroll.side_effect = [
+        ([SimpleNamespace(id=first_id)], "next-page"),
+        ([SimpleNamespace(id=second_id)], None),
+    ]
+    provider = make_provider(client=client)
+
+    result = asyncio.run(
+        provider.list_ids_by_project("chunks_lfm", "project-1")
+    )
+
+    assert result.is_success is True
+    assert result.value == [first_id, second_id]
+
+    first_call, second_call = client.scroll.await_args_list
+    for call in (first_call, second_call):
+        kwargs = call.kwargs
+        assert kwargs["collection_name"] == "chunks_lfm"
+        assert kwargs["limit"] == 256
+        assert kwargs["with_payload"] is False
+        assert kwargs["with_vectors"] is False
+        condition = kwargs["scroll_filter"].must[0]
+        assert condition.key == "project_id"
+        assert condition.match.value == "project-1"
+
+    assert first_call.kwargs["offset"] is None
+    assert second_call.kwargs["offset"] == "next-page"
+
+
+def test_list_ids_by_project_rejects_blank_project_id():
+    client = AsyncMock()
+    provider = make_provider(client=client)
+
+    result = asyncio.run(
+        provider.list_ids_by_project("chunks_lfm", "   ")
+    )
+
+    assert result.is_success is False
+    assert result.error.code == ErrorCode.VECTOR_DB_INVALID_PROJECT_FILTER
+    client.scroll.assert_not_awaited()
+
+
+def test_list_ids_by_project_translates_scroll_failure():
+    client = AsyncMock()
+    client.scroll.side_effect = RuntimeError("scroll failed")
+    provider = make_provider(client=client)
+
+    result = asyncio.run(
+        provider.list_ids_by_project("chunks_lfm", "project-1")
+    )
+
+    assert result.is_success is False
+    assert result.error.code == (
+        ErrorCode.VECTOR_DB_PROJECT_VECTOR_LOOKUP_FAILED
+    )
+    assert result.error.type is ErrorType.INTERNAL
+

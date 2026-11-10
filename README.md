@@ -134,6 +134,21 @@ The approved models are:
 
 To add a provider, implement the general chat and/or embedding contract under `src/llm/providers/`, add its provider-specific configuration and an environment-based builder, then register the builder in `src/llm/providers/provider_registry.py`.
 
+### Vector Database Settings
+
+The vector database integration is configured through `.env`:
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `VECTOR_DB_PROVIDER` | `qdrant` | Vector database provider identifier. |
+| `VECTOR_DB_COLLECTIONS` | empty | Collections created at startup, each with its own dimension and distance metric. |
+| `VECTOR_DB_COLLECTION` | first configured collection | Collection used by vector indexing and search. It must match the configured embedding model. |
+| `QDRANT_URL` | `http://localhost:6333` | Qdrant endpoint. |
+| `QDRANT_API_KEY` | empty | Optional Qdrant API key. |
+| `QDRANT_TIMEOUT` | `30` | Qdrant request timeout in seconds. |
+
+Collections are initialized once during application startup. Indexing and search operations do not perform connectivity or collection-existence checks.
+
 ## Running the Application
 
 Make sure your Conda environment is active and the required services are available.
@@ -187,6 +202,33 @@ The response contains `data.model` and the model's `data.content`.
 ```
 
 The response contains `data.model`, `data.dimensions` and the full `data.embedding` vector.
+
+### Vector Indexing and Search Endpoints
+
+These endpoints use the configured embedding model and vector collection.
+
+**Index project chunks** — `POST /api/v1/projects/{project_id}/vectors/index`
+
+```json
+{
+  "do_reset": false
+}
+```
+
+When `do_reset` is `true`, the new vectors are fully generated and stored first. Only then are vectors that no longer belong to the project removed, so a failed embedding or upsert leaves the previous index intact.
+
+The response contains `data.project_id` and `data.indexed_count`.
+
+**Search project vectors** — `POST /api/v1/projects/{project_id}/vectors/search`
+
+```json
+{
+  "query": "What is dependency injection?",
+  "limit": 5
+}
+```
+
+The response contains the top matching chunks with `chunk_id`, `project_id`, `asset_id`, `chunk_index`, `text` and `score`. Results are always filtered by the requested project.
 
 ## Testing
 

@@ -392,3 +392,52 @@ def test_delete_by_project_id_returns_zero_for_empty_project(
     assert (
         run_async(chunk_repository.delete_by_project_id(ObjectId())) == 0
     )
+
+
+def test_get_all_by_project_id_returns_every_chunk_for_the_project(
+    run_async,
+    chunk_repository,
+    make_data_chunk,
+):
+    project_id = ObjectId()
+    other_project_id = ObjectId()
+    asset_id = ObjectId()
+
+    async def scenario():
+        matching = build_chunks(
+            make_data_chunk,
+            project_id,
+            asset_id,
+            4,
+            prefix="matching",
+        )
+        other = build_chunks(
+            make_data_chunk,
+            other_project_id,
+            asset_id,
+            2,
+            prefix="other",
+        )
+        await chunk_repository.insert_many_chunks(matching + other)
+
+        stored = await chunk_repository.get_all_by_project_id(project_id)
+
+        assert len(stored) == 4
+        assert all(
+            chunk.chunk_project_id == project_id for chunk in stored
+        )
+        assert {chunk.chunk_text for chunk in stored} == {
+            chunk.chunk_text for chunk in matching
+        }
+
+    run_async(scenario())
+
+
+def test_get_all_by_project_id_returns_empty_list_for_unknown_project(
+    run_async,
+    chunk_repository,
+):
+    assert (
+        run_async(chunk_repository.get_all_by_project_id(ObjectId())) == []
+    )
+
