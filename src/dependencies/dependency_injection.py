@@ -5,8 +5,14 @@ from pymongo.asynchronous.database import AsyncDatabase
 
 from src.db.dependencies import get_database
 from src.helpers.config import settings
-from src.llm.dependencies import get_embedding_provider_factory
-from src.llm.factories import EmbeddingProviderFactory
+from src.llm.dependencies import (
+    get_chat_provider_factory,
+    get_embedding_provider_factory,
+)
+from src.llm.factories import (
+    ChatProviderFactory,
+    EmbeddingProviderFactory,
+)
 from src.vector_db.VectorDBDependencies import get_vector_store
 from src.vector_db.VectorDBInterface import VectorStore
 
@@ -17,6 +23,7 @@ from src.repositories.asset_repository import AssetRepository
 from src.business_logic.chunk_business_logic import ChunkBusinessLogic
 from src.business_logic.project_business_logic import ProjectBusinessLogic
 from src.business_logic.asset_business_logic import AssetBusinessLogic
+from src.business_logic.rag_business_logic import RAGBusinessLogic
 from src.business_logic.vector_business_logic import VectorBusinessLogic
 
 
@@ -80,4 +87,20 @@ def get_vector_business_logic(
         embedding_factory=embedding_factory,
         vector_store=vector_store,
         collection_name=settings.active_vector_collection_name,
+    )
+
+
+def get_rag_business_logic(
+    vector_business_logic: Annotated[
+        VectorBusinessLogic,
+        Depends(get_vector_business_logic),
+    ],
+    chat_factory: Annotated[
+        ChatProviderFactory,
+        Depends(get_chat_provider_factory),
+    ],
+) -> RAGBusinessLogic:
+    return RAGBusinessLogic(
+        vector_business_logic=vector_business_logic,
+        chat_factory=chat_factory,
     )
