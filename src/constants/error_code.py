@@ -86,6 +86,11 @@ class ErrorCode(StrEnum):
     )
     EMPTY_SEARCH_QUERY = "empty_search_query"
 
+    # RAG
+    EMPTY_RAG_QUESTION = "empty_rag_question"
+    NO_RELEVANT_CHUNKS = "no_relevant_chunks"
+    PROMPT_TEMPLATE_NOT_FOUND = "prompt_template_not_found"
+
     # Pagination
     INVALID_PAGINATION = "invalid_pagination"
     PAGE_SIZE_TOO_LARGE = "page_size_too_large"

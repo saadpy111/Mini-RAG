@@ -19,7 +19,6 @@ from src.dtos import (
     VectorSearchResultDTO,
 )
 from src.helpers.result_pattern import Result
-from src.vector_db.VectorDBModels import VectorSearchResult
 
 
 vector_router = APIRouter(
@@ -32,21 +31,6 @@ VectorBL = Annotated[
     VectorBusinessLogic,
     Depends(get_vector_business_logic),
 ]
-
-
-def _to_search_result_dto(
-    result: VectorSearchResult,
-) -> VectorSearchResultDTO:
-    metadata = result.metadata
-
-    return VectorSearchResultDTO(
-        chunk_id=str(metadata.get("chunk_id", result.vector_id)),
-        project_id=str(metadata.get("project_id", "")),
-        asset_id=str(metadata.get("asset_id", "")),
-        chunk_index=int(metadata.get("chunk_index", 0) or 0),
-        text=str(metadata.get("text", "")),
-        score=result.score,
-    )
 
 
 @vector_router.post(
@@ -98,7 +82,7 @@ async def search_project_vectors(
         return to_http_response(result)
 
     search_results = [
-        _to_search_result_dto(item)
+        VectorSearchResultDTO.from_search_result(item)
         for item in (result.value or [])
     ]
 

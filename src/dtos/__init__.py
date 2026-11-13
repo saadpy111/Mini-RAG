@@ -4,6 +4,7 @@ from .requests import (
     EmbeddingTestRequest,
     ProcessRequest,
     ProjectProcessRequest,
+    RAGAnswerRequest,
     VectorIndexRequest,
     VectorSearchRequest,
 )
@@ -13,6 +14,7 @@ from .responses import (
     ProcessedAssetDTO,
     ProcessedFileDTO,
     ProjectProcessResultDTO,
+    RAGAnswerResultDTO,
     VectorIndexResultDTO,
     VectorSearchResultDTO,
 )
@@ -29,6 +31,8 @@ __all__ = [
     "ProcessedFileDTO",
     "ProjectProcessRequest",
     "ProjectProcessResultDTO",
+    "RAGAnswerRequest",
+    "RAGAnswerResultDTO",
     "UploadFileDTO",
     "VectorIndexRequest",
     "VectorIndexResultDTO",

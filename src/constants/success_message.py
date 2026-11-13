@@ -18,3 +18,4 @@ class SuccessMessage(StrEnum):
     LLM_EMBEDDING_TEST_COMPLETED = (
         "LLM embedding test completed successfully."
     )
+    RAG_ANSWER_GENERATED = "RAG answer generated successfully."

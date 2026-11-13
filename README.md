@@ -230,6 +230,22 @@ The response contains `data.project_id` and `data.indexed_count`.
 
 The response contains the top matching chunks with `chunk_id`, `project_id`, `asset_id`, `chunk_index`, `text` and `score`. Results are always filtered by the requested project.
 
+### RAG Answer Endpoint
+
+**Answer a project question** — `POST /api/v1/projects/{project_id}/rag/answer`
+
+```json
+{
+  "question": "What are the main findings?"
+}
+```
+
+The endpoint detects whether the question is Arabic or English, embeds it with the configured embedding model, retrieves the most relevant chunks from the project's vector collection, and sends the grounded context to the configured chat model.
+
+The response contains `data.project_id`, `data.question`, `data.answer`, `data.language`, `data.model` and `data.sources`. If no usable chunks are found, the endpoint returns `422` with the `no_relevant_chunks` error message.
+
+The language-specific system instructions and user prompt templates live in `src/llm/templates/`. The business logic only detects the language, selects the registered template and orchestrates the flow.
+
 ## Testing
 
 The project contains unit tests and integration tests.
@@ -303,6 +319,7 @@ Mini-RAG/
 │   ├── business_logic/
 │   ├── helpers/
 │   ├── llm/
+│   │   └── templates/
 │   ├── models/
 │   ├── repositories/
 │   ├── routes/

@@ -9,6 +9,7 @@ from src.routes import (
     base_router,
     data_router,
     llm_router,
+    rag_router,
     vector_router,
 )
 from src.vector_db.VectorDBLifecycle import vector_db_lifespan
@@ -29,4 +30,5 @@ register_exception_handlers(app)
 app.include_router(base_router)
 app.include_router(data_router)
 app.include_router(llm_router)
+app.include_router(rag_router)
 app.include_router(vector_router)

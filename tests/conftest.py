@@ -22,6 +22,7 @@ import main  # noqa: E402
 from src.business_logic.asset_business_logic import AssetBusinessLogic  # noqa: E402
 from src.business_logic.chunk_business_logic import ChunkBusinessLogic  # noqa: E402
 from src.business_logic.project_business_logic import ProjectBusinessLogic  # noqa: E402
+from src.business_logic.rag_business_logic import RAGBusinessLogic  # noqa: E402
 from src.models.asset import Asset  # noqa: E402
 from src.models.data_chunk import DataChunk  # noqa: E402
 from src.models.project import Project  # noqa: E402
@@ -71,6 +72,13 @@ def chunk_bl():
     from unittest.mock import AsyncMock
 
     return AsyncMock(spec=ChunkBusinessLogic)
+
+
+@pytest.fixture
+def rag_bl():
+    from unittest.mock import AsyncMock
+
+    return AsyncMock(spec=RAGBusinessLogic)
 
 
 @pytest.fixture

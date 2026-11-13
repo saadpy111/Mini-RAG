@@ -130,6 +130,15 @@ class ErrorMessage(StrEnum):
     )
     EMPTY_SEARCH_QUERY = "Search query cannot be empty."
 
+    # RAG
+    EMPTY_RAG_QUESTION = "Question cannot be empty."
+    NO_RELEVANT_CHUNKS = (
+        "No relevant chunks were found for this question in the project."
+    )
+    PROMPT_TEMPLATE_NOT_FOUND = (
+        "No prompt template is configured for the detected language."
+    )
+
     # Pagination
     INVALID_PAGINATION = (
         "Page size and page number must be greater than zero."
