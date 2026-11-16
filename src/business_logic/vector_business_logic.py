@@ -12,6 +12,10 @@ from src.llm.contracts import EmbeddingProvider
 from src.llm.factories import EmbeddingProviderFactory
 from src.models.data_chunk import DataChunk
 from src.models.project import Project
+from src.observability.metrics import (
+    RAG_EMBEDDING_DURATION_SECONDS,
+    RAG_VECTOR_SEARCH_DURATION_SECONDS,
+)
 from src.repositories.data_chunk_repository import DataChunkRepository
 from src.repositories.project_repository import ProjectRepository
 from src.vector_db.VectorDBInterface import VectorStore
@@ -182,19 +186,25 @@ class VectorBusinessLogic:
         if not provider_result.is_success:
             return Result.failure(provider_result.error)
 
-        embedding_result = await provider_result.value.embed(
-            normalized_query
-        )
+        with RAG_EMBEDDING_DURATION_SECONDS.labels(
+            operation="query"
+        ).time():
+            embedding_result = await provider_result.value.embed(
+                normalized_query
+            )
 
         if not embedding_result.is_success:
             return Result.failure(embedding_result.error)
 
-        search_result = await self.vector_store.search(
-            self.collection_name,
-            embedding_result.value,
-            limit=limit,
-            filters=VectorSearchFilter(project_id=project.project_id),
-        )
+        with RAG_VECTOR_SEARCH_DURATION_SECONDS.labels(
+            operation="search"
+        ).time():
+            search_result = await self.vector_store.search(
+                self.collection_name,
+                embedding_result.value,
+                limit=limit,
+                filters=VectorSearchFilter(project_id=project.project_id),
+            )
 
         if not search_result.is_success:
             return Result.failure(search_result.error)
