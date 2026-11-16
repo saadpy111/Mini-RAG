@@ -10,3 +10,4 @@ pathlib==1.0.1
 async-pymongo==0.1.12
 httpx==0.28.1
 qdrant-client==1.20.0
+prometheus-client==0.26.0

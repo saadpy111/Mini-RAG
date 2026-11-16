@@ -1,0 +1,66 @@
+groups:
+  - name: infrastructure
+    rules:
+      - alert: HostHighCpuUsage
+        expr: |
+          100 - (
+            avg by (instance) (
+              rate(node_cpu_seconds_total{mode="idle"}[5m])
+            ) * 100
+          ) > 85
+        for: 10m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "Host CPU usage is high"
+          description: "CPU usage on {{ $labels.instance }} is {{ printf \"%.1f\" $value }}% for 10 minutes."
+
+      - alert: HostHighMemoryUsage
+        expr: |
+          (
+            1 - (
+              node_memory_MemAvailable_bytes
+              / node_memory_MemTotal_bytes
+            )
+          ) * 100 > 90
+        for: 10m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "Host memory usage is high"
+          description: "Memory usage on {{ $labels.instance }} is {{ printf \"%.1f\" $value }}% for 10 minutes."
+
+      - alert: HostLowDiskSpace
+        expr: |
+          (
+            node_filesystem_avail_bytes{
+              fstype!~"tmpfs|overlay|squashfs|proc|sysfs|cgroup|devtmpfs|devpts|mqueue|hugetlbfs|tracefs|debugfs|securityfs|pstore|bpf|autofs|binfmt_misc|configfs|fusectl",
+              mountpoint!~"/etc/(hosts|hostname|resolv.conf)|/run/.*|/parent-distro/.*"
+            }
+            /
+            node_filesystem_size_bytes{
+              fstype!~"tmpfs|overlay|squashfs|proc|sysfs|cgroup|devtmpfs|devpts|mqueue|hugetlbfs|tracefs|debugfs|securityfs|pstore|bpf|autofs|binfmt_misc|configfs|fusectl",
+              mountpoint!~"/etc/(hosts|hostname|resolv.conf)|/run/.*|/parent-distro/.*"
+            }
+          ) * 100 < 15
+          and on (instance, mountpoint, device)
+          node_filesystem_size_bytes > 1e9
+        for: 10m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "Host filesystem is low on free space"
+          description: "Filesystem {{ $labels.mountpoint }} on {{ $labels.instance }} has less than 15% free space."
+
+      - alert: NodeExporterDown
+        expr: up{job="node-exporter"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "Node Exporter is unavailable"
+          description: "Prometheus cannot scrape Node Exporter."

@@ -1,0 +1,42 @@
+groups:
+  - name: containers
+    rules:
+      - alert: ContainerUnavailable
+        expr: |
+          time() - container_last_seen{
+            job="cadvisor",
+            container_label_com_docker_compose_service!=""
+          } > 120
+        for: 2m
+        labels:
+          severity: warning
+          component: containers
+        annotations:
+          summary: "Container {{ $labels.container_label_com_docker_compose_service }} is unavailable"
+          description: "cAdvisor has not seen the container for more than 2 minutes."
+
+      - alert: ContainerRestarting
+        expr: |
+          changes(
+            container_start_time_seconds{
+              job="cadvisor",
+              container_label_com_docker_compose_service!=""
+            }[15m]
+          ) > 0
+        for: 5m
+        labels:
+          severity: warning
+          component: containers
+        annotations:
+          summary: "Container {{ $labels.container_label_com_docker_compose_service }} has restarted"
+          description: "The container start time changed within the last 15 minutes."
+
+      - alert: CadvisorDown
+        expr: up{job="cadvisor"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          component: containers
+        annotations:
+          summary: "cAdvisor is unavailable"
+          description: "Prometheus cannot scrape cAdvisor."

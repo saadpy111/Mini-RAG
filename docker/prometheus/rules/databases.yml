@@ -1,0 +1,32 @@
+groups:
+  - name: databases
+    rules:
+      - alert: MongoDBDown
+        expr: mongodb_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: mongodb
+        annotations:
+          summary: "MongoDB is unavailable"
+          description: "The MongoDB exporter reports that MongoDB is down."
+
+      - alert: MongoDBExporterDown
+        expr: up{job="mongodb"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          component: mongodb
+        annotations:
+          summary: "MongoDB Exporter is unavailable"
+          description: "Prometheus cannot scrape the MongoDB exporter."
+
+      - alert: QdrantDown
+        expr: up{job="qdrant"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: qdrant
+        annotations:
+          summary: "Qdrant is unavailable"
+          description: "Prometheus cannot scrape the Qdrant metrics endpoint."
