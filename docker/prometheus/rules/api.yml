@@ -1,0 +1,53 @@
+groups:
+  - name: api
+    rules:
+      - alert: APIDown
+        expr: up{job="api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: api
+        annotations:
+          summary: "Mini-RAG API is unavailable"
+          description: "Prometheus has been unable to scrape the FastAPI target for more than 1 minute."
+
+      - alert: APITargetMissing
+        expr: absent(up{job="api"})
+        for: 2m
+        labels:
+          severity: critical
+          component: api
+        annotations:
+          summary: "Mini-RAG API target is missing"
+          description: "The API scrape target is absent from Prometheus."
+
+      - alert: APIHighErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{job="api", status=~"5.."}[5m]))
+            /
+            clamp_min(sum(rate(http_requests_total{job="api"}[5m])), 1e-9)
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "Mini-RAG API 5xx error rate is high"
+          description: "The API 5xx rate is {{ $value | humanizePercentage }} over the last 5 minutes."
+
+      - alert: APIHighLatency
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (
+              rate(http_request_duration_seconds_bucket{job="api"}[5m])
+            )
+          ) > 5
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "Mini-RAG API latency is high"
+          description: "The API p95 request latency is {{ $value | humanizeDuration }} over the last 5 minutes."
