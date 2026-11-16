@@ -5,10 +5,12 @@ from fastapi import FastAPI
 from src.api import register_exception_handlers
 from src.db.mongodb import lifespan as mongodb_lifespan
 from src.llm.lifecycle import llm_lifespan
+from src.observability.http_middleware import PrometheusMiddleware
 from src.routes import (
     base_router,
     data_router,
     llm_router,
+    metrics_router,
     rag_router,
     vector_router,
 )
@@ -25,10 +27,12 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+app.add_middleware(PrometheusMiddleware)
 register_exception_handlers(app)
 
 app.include_router(base_router)
 app.include_router(data_router)
 app.include_router(llm_router)
+app.include_router(metrics_router)
 app.include_router(rag_router)
 app.include_router(vector_router)
